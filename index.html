@@ -1042,6 +1042,27 @@
           });
         }
 
+        function resetAdminView() {
+          // 1. Reset input text
+          document.getElementById("search_admin_query").value = "";
+
+          // 2. Clear results list
+          document.getElementById("admin_search_results").innerHTML = "";
+
+          // 3. Hide suggestions if visible
+          var suggestionBox = document.getElementById("admin_suggestions");
+          if (suggestionBox) {
+            suggestionBox.style.display = "none";
+            suggestionBox.innerHTML = "";
+          }
+
+          // 4. Remove highlight (orange lines)
+          clearHighlight();
+
+          // 5. Restore original admin layers
+          restoreAdminLayers();
+        }
+
         function showResultsList(matches) {
           var container = document.getElementById("admin_search_results");
           container.innerHTML = "";
@@ -1120,10 +1141,7 @@
           restoreBtn.style.marginTop = "8px";
           restoreBtn.textContent = "Restore all administrative layers";
           restoreBtn.addEventListener("click", function () {
-            clearHighlight();
-            restoreAdminLayers();
-            container.innerHTML = "";
-            document.getElementById("search_admin_query").value = "";
+            resetAdminView();
           });
           container.appendChild(restoreBtn);
         }
@@ -1155,13 +1173,7 @@
           }
         });
 
-        document.getElementById("btn_admin_clear").addEventListener("click", function () {
-          document.getElementById("search_admin_query").value = "";
-          document.getElementById("admin_search_results").innerHTML = "";
-          clearHighlight();
-          // FIX: Restore logic added to clear handler to reset map state
-          restoreAdminLayers();
-        });
+        document.getElementById("btn_admin_clear").addEventListener("click", resetAdminView);
       })();
     </script>
   </body>
