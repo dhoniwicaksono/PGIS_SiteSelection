@@ -569,9 +569,10 @@
 
       loadToponimiGeojson(topoCandidates).then(function(res){ console.log('Toponimi loaded from', res.url, 'features:', res.features); }).catch(function(err){ console.warn('Toponimi load failed', err); var legendContainer = document.getElementById('legendItems'); if (legendContainer && !legendContainer.innerHTML.trim()) legendContainer.innerHTML = '<div class="small">Legend kosong — Toponimi belum dimuat. Letakkan file <code>TOPONIMI_KANTORPEMERINTAH_PT.geojson</code> di folder aplikasi atau <code>data/</code> lalu reload halaman.</div>'; });
 
-      // --- Administrative search UI (build now, independent of getLocation)
+      // --- Administrative search UI (build now, inserted before legend)
       (function(){
         var sidebarRightEl = document.getElementById('sidebarRight');
+        var legendEl = document.getElementById('topoLegend');
         if (sidebarRightEl) {
           var searchWrap = document.createElement('div');
           searchWrap.style.marginTop = '8px';
@@ -586,7 +587,9 @@
                                  '<input id="adminSearchInput" placeholder="ketik nama..." style="flex:1;padding:6px;border-radius:4px;border:1px solid #ccc" />' +
                                  '</div>' +
                                  '<div id="admin_suggestions" style="max-height:160px;overflow:auto;border:1px solid #eee;padding:6px;border-radius:6px;background:#fff"></div>';
-          sidebarRightEl.insertBefore(searchWrap, sidebarRightEl.firstChild.nextSibling);
+          // insert search right before legend to guarantee order: Get location -> Zoom -> Search -> Legend
+          if (legendEl) sidebarRightEl.insertBefore(searchWrap, legendEl);
+          else sidebarRightEl.appendChild(searchWrap);
         }
 
         var levelSelect = document.getElementById('adminLevelSelect');
