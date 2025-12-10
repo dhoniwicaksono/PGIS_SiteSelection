@@ -907,21 +907,40 @@
         function updateSuggestionsForQuery(q) {
           var level = document.getElementById("search_admin_level").value;
           var key = keyForLevel(level);
+          console.log("[admin-autocomplete] updateSuggestionsForQuery:", key, q);
+          suggestionBox.innerHTML = "";
+          suggestionBox.style.display = "block";
+          // show loading hint
+          var loading = document.createElement("div");
+          loading.style.padding = "6px";
+          loading.style.color = "#666";
+          loading.textContent = "Loading suggestions...";
+          suggestionBox.appendChild(loading);
+
           var promiseNames;
-          if (adminLayers[key]) promiseNames = getNamesFromLayer(key);
-          else
-            promiseNames = fetchNamesFromGeojson(urlForKey(key)).then(function (list) {
-              if (list.length) return list;
-              return loadAdminGeojson(key, urlForKey(key), level)
-                .then(function () {
-                  return getNamesFromLayer(key);
-                })
-                .catch(function () {
-                  return [];
-                });
-            });
+          if (adminLayers[key]) {
+            promiseNames = getNamesFromLayer(key);
+          } else {
+            // prefer to load layer (gives better chance to access names, and will surface debug if fails)
+            promiseNames = loadAdminGeojson(key, urlForKey(key), level)
+              .then(function () {
+                return getNamesFromLayer(key);
+              })
+              .catch(function (err) {
+                console.warn("[admin-autocomplete] loadAdminGeojson failed:", err);
+                // as fallback try fetching raw geojson
+                return fetchNamesFromGeojson(urlForKey(key));
+              });
+          }
+
           promiseNames
             .then(function (list) {
+              // remove loading
+              suggestionBox.innerHTML = "";
+              if (!list || list.length === 0) {
+                suggestionBox.style.display = "none";
+                return;
+              }
               if (!q) {
                 showSuggestions(list.slice(0, 10));
                 return;
@@ -932,14 +951,20 @@
               });
               showSuggestions(filtered);
             })
-            .catch(function () {
-              showSuggestions([]);
+            .catch(function (err) {
+              console.warn("[admin-autocomplete] promiseNames failed", err);
+              suggestionBox.innerHTML = "";
+              suggestionBox.style.display = "none";
             });
         }
 
         var debouncedUpdate = debounce(function () {
           updateSuggestionsForQuery(queryInput.value.trim());
         }, 250);
+        (function () {
+          updateSuggestionsForQuery(queryInput.value.trim());
+        }),
+          250;
         queryInput.addEventListener("input", debouncedUpdate);
         queryInput.addEventListener("focus", function () {
           debouncedUpdate();
