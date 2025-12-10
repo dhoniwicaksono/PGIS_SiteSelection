@@ -447,6 +447,8 @@
 
       // --- Administrative layers (external data/) ---
       var adminLayers = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null };
+      // track level mapping so we can restore styles later
+      var adminLayerLevels = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null }; 
 
       function styleFor(level) {
         switch(level) {
@@ -465,7 +467,7 @@
         try { var base = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, ''); candidates.push(base + '/' + url); } catch(e){}
         candidates = candidates.filter(function(v,i){ return candidates.indexOf(v) === i; });
 
-        if (adminLayers[key]) { try{ map.removeLayer(adminLayers[key]); }catch(e){} adminLayers[key]=null; }
+        if (adminLayers[key]) { try{ map.removeLayer(adminLayers[key]); }catch(e){} adminLayers[key]=null; adminLayerLevels[key]=null; }
 
         var errors = [];
         for (var i=0;i<candidates.length;i++){
@@ -486,6 +488,7 @@
             if (level === 'prov') try{ if (layer.bringToBack) layer.bringToBack(); }catch(e){}
             if (level === 'desa') try{ if (layer.bringToFront) layer.bringToFront(); }catch(e){}
             adminLayers[key] = layer;
+            adminLayerLevels[key] = level;
             // remove any debug entry
             var dbg = document.getElementById('admin_debug_' + key); if (dbg) dbg.remove();
             console.log('Loaded', key, 'from', u);
@@ -641,12 +644,34 @@
 
         function hideAllAdminLayers(){
           Object.keys(adminLayers).forEach(function(k){
-            try{ if (adminLayers[k] && map.hasLayer && map.hasLayer(adminLayers[k])) map.removeLayer(adminLayers[k]); }catch(e){}
+            var layer = adminLayers[k];
+            try{
+              if (!layer) return;
+              // prefer to dim via setStyle if available
+              if (typeof layer.setStyle === 'function') {
+                layer.setStyle({ color: 'rgba(0,0,0,0)', weight: 0, opacity: 0, fillOpacity: 0 });
+              } else {
+                if (map.hasLayer && map.hasLayer(layer)) map.removeLayer(layer);
+              }
+            }catch(e){ console.warn('hideAllAdminLayers err', e); }
           });
         }
         function restoreAdminLayers(){
           Object.keys(adminLayers).forEach(function(k){
-            try{ if (adminLayers[k] && map.hasLayer && !map.hasLayer(adminLayers[k])) map.addLayer(adminLayers[k]); }catch(e){}
+            var layer = adminLayers[k];
+            var lvl = adminLayerLevels[k] || null;
+            try{
+              if (!layer) return;
+              if (typeof layer.setStyle === 'function' && lvl) {
+                var s = styleFor(lvl);
+                // setStyle expects color/weight/opacity/fillOpacity
+                layer.setStyle({ color: s.color || '#000', weight: s.weight || 1, opacity: s.opacity || 1, fillOpacity: s.fill ? (s.fillOpacity||0.2) : 0 });
+                // ensure layer is added to map
+                if (map.hasLayer && !map.hasLayer(layer)) map.addLayer(layer);
+              } else {
+                if (map.hasLayer && !map.hasLayer(layer)) map.addLayer(layer);
+              }
+            }catch(e){ console.warn('restoreAdminLayers err', e); }
           });
         }
 
