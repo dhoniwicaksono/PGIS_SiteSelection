@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebGIS Prototype — Collect Points & Export CSV</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      /* Left sidebar */
+      #sidebar {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.98);
+        padding: 10px;
+        border-radius: 6px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+        width: 320px;
+        max-height: 90vh;
+        overflow: auto;
+      }
+
+      /* Right sidebar */
+      #sidebarRight {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.98);
+        padding: 10px;
+        border-radius: 6px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+        width: 320px;
+        max-height: 90vh;
+        overflow: auto;
+      }
+
+      @media (max-width: 700px) {
+        #sidebar,
+        #sidebarRight {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          top: auto;
+          width: 100%;
+          max-height: 45vh;
+          border-radius: 12px 12px 0 0;
+          padding: 10px 12px;
+        }
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 8px 12px;
+        margin: 6px 4px;
+        border-radius: 6px;
+        border: 1px solid #2c7be5;
+        background: #2c7be5;
+        color: #fff;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn.secondary {
+        background: #fff;
+        color: #2c7be5;
+      }
+      .btn.tertiary {
+        background: #f5f5f5;
+        color: #333;
+        border: 1px solid #ddd;
+      }
+      .smallBtn {
+        padding: 4px 6px;
+        font-size: 12px;
+      }
+
+      label {
+        display: block;
+        margin-top: 8px;
+        font-weight: 600;
+      }
+      input[type="text"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        margin-top: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      textarea {
+        resize: vertical;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      table th,
+      table td {
+        border: 1px solid #ddd;
+        padding: 6px;
+        font-size: 13px;
+      }
+      .small {
+        font-size: 13px;
+        color: #555;
+      }
+
+      @media (max-width: 700px) {
+        /* hide lat/lon columns on mobile (indexes adjusted below) */
+        table th:nth-child(5),
+        table td:nth-child(5),
+        table th:nth-child(6),
+        table td:nth-child(6) {
+          display: none;
+        }
+        .btn {
+          font-size: 13px;
+          padding: 8px 10px;
+        }
+      }
+
+      .leaflet-control-layers {
+        z-index: 1200;
+      }
+
+      /* admin label style */
+      .admin-label {
+        background: rgba(255, 255, 255, 0.85);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: #111;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <div id="sidebar">
+      <h3 style="margin: 6px 0">Collector — Preference Mapping (MaxEnt)</h3>
+      <div class="small">Klik peta untuk menambahkan titik. Isi atribut di form, lalu tekan <b>Save Point</b>. Minimal <b>10 titik</b> per responden direkomendasikan.</div>
+
+      <label>Respondent ID</label>
+      <input type="text" id="respondent_id" placeholder="e.g. R01" />
+
+      <label>Stakeholder Group</label>
+      <select id="stakeholder_group">
+        <option value="Pemerintah_Desa">Pemerintah Desa</option>
+        <option value="Pelaku_Usaha">Pelaku Usaha</option>
+        <option value="Dinas_Terkait">Dinas Terkait</option>
+        <option value="Lainnya">Lainnya</option>
+      </select>
+
+      <label>Mapping Object</label>
+      <input type="text" id="mapping_object" placeholder="contoh: Pendidikan" />
+
+      <label>Point ID (optional)</label>
+      <input type="text" id="point_id" placeholder="auto: R01_P1" />
+
+      <label>Reason (optional)</label>
+      <textarea id="reason" rows="2" placeholder="Contoh: dekat jalan kolektor dan pasar"></textarea>
+
+      <label>Map Source</label>
+      <select id="map_source">
+        <option value="webGIS">webGIS</option>
+        <option value="peta_cetak">peta_cetak</option>
+        <option value="gps">gps</option>
+      </select>
+
+      <label>Accuracy (m) — optional</label>
+      <input type="text" id="accuracy_m" placeholder="e.g. 10" />
+
+      <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center">
+        <button id="savePointBtn" class="btn">Save Point</button>
+        <button id="clearFormBtn" class="btn secondary">Clear Form</button>
+        <button id="centerBtn" class="btn tertiary">Center Map</button>
+      </div>
+
+      <hr />
+
+      <div class="small"><b>Points collected for current respondent:</b></div>
+      <div id="pointsCount">0 points</div>
+
+      <table id="pointsTable" style="display: none">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>ID</th>
+            <th>Mapping Object</th>
+            <th>Lat</th>
+            <th>Lon</th>
+            <th>Reason</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap">
+        <button id="exportCsv" class="btn">Export CSV</button>
+        <button id="exportGeojson" class="btn">Export GeoJSON</button>
+        <button id="clearAll" class="btn secondary">Clear All Points</button>
+      </div>
+
+      <hr />
+      <div class="small">Instruksi singkat: 1) Isi Respondent ID. 2) Klik lokasi pada peta. 3) Edit atribut jika perlu. 4) Tekan "Save Point". 5) Setelah selesai, tekan Export CSV.</div>
+    </div>
+
+    <div id="sidebarRight">
+      <h3 style="margin: 6px 0">Tools</h3>
+      <div class="small">Tool cepat untuk pengguna.</div>
+
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px; align-items: center">
+        <button id="getLocationBtn" class="btn" style="width: 80%; text-align: center">Get my location</button>
+        <div style="display: flex; gap: 8px; justify-content: center; width: 100%">
+          <button id="zoomInBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom In</button>
+          <button id="zoomOutBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom Out</button>
+        </div>
+      </div>
+
+      <hr />
+      <div class="small">Gunakan <b>Get my location</b> untuk memusatkan peta pada posisi perangkat Anda dan menandainya.</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      // --- Map init ---
+      var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" });
+      var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm] });
+      L.control.scale().addTo(map);
+      var baseMaps = { "OSM Standard": osm };
+      L.control.layers(baseMaps, null, { collapsed: false }).addTo(map);
+      map.whenReady(function () {
+        setTimeout(function () {
+          map.invalidateSize();
+        }, 300);
+      });
+
+      // --- State ---
+      var allPoints = [];
+      var tempMarker = null;
+
+      // --- DOM ---
+      var respondentIdEl = document.getElementById("respondent_id");
+      var stakeholderEl = document.getElementById("stakeholder_group");
+      var mappingObjectEl = document.getElementById("mapping_object");
+      var pointIdEl = document.getElementById("point_id");
+      var reasonEl = document.getElementById("reason");
+      var mapSourceEl = document.getElementById("map_source");
+      var accuracyEl = document.getElementById("accuracy_m");
+      var saveBtn = document.getElementById("savePointBtn");
+      var clearFormBtn = document.getElementById("clearFormBtn");
+      var pointsCountEl = document.getElementById("pointsCount");
+      var pointsTable = document.getElementById("pointsTable");
+      var pointsTableBody = pointsTable.querySelector("tbody");
+      var exportCsvBtn = document.getElementById("exportCsv");
+      var exportGeoBtn = document.getElementById("exportGeojson");
+      var clearAllBtn = document.getElementById("clearAll");
+      var centerBtn = document.getElementById("centerBtn");
+      var getLocationBtn = document.getElementById("getLocationBtn");
+      var zoomInBtn = document.getElementById("zoomInBtn");
+      var zoomOutBtn = document.getElementById("zoomOutBtn");
+
+      function currentRespondentId() {
+        return respondentIdEl.value ? respondentIdEl.value.trim() : "";
+      }
+      function pointsForRespondent(rid) {
+        return allPoints.filter(function (p) {
+          return p.respondent_id === rid;
+        });
+      }
+
+      function updatePointsUI() {
+        var rid = currentRespondentId();
+        var pts = rid ? pointsForRespondent(rid) : [];
+        pointsCountEl.textContent = pts.length + " points";
+        if (!pts || pts.length === 0) {
+          pointsTable.style.display = "none";
+          pointsTableBody.innerHTML = "";
+          return;
+        }
+        pointsTable.style.display = "table";
+        pointsTableBody.innerHTML = "";
+        pts.forEach(function (p, i) {
+          var tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" +
+            (i + 1) +
+            "</td>" +
+            "<td>" +
+            p.point_id +
+            "</td>" +
+            "<td>" +
+            (p.mapping_object ? p.mapping_object : "") +
+            "</td>" +
+            "<td>" +
+            p.latitude.toFixed(6) +
+            "</td>" +
+            "<td>" +
+            p.longitude.toFixed(6) +
+            "</td>" +
+            "<td>" +
+            (p.reason ? p.reason.substring(0, 20) : "") +
+            "</td>" +
+            '<td><button data-pid="' +
+            p.point_id +
+            '" class="btn secondary smallBtn">Del</button></td>';
+          pointsTableBody.appendChild(tr);
+        });
+        // attach delete handlers
+        pointsTableBody.querySelectorAll(".smallBtn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var pid = this.getAttribute("data-pid");
+            var rid = currentRespondentId();
+            var idx = allPoints.findIndex(function (x) {
+              return x.point_id === pid && x.respondent_id === rid;
+            });
+            if (idx >= 0) {
+              if (allPoints[idx].marker) map.removeLayer(allPoints[idx].marker);
+              allPoints.splice(idx, 1);
+              updatePointsUI();
+            }
+          });
+        });
+      }
+
+      function resetFormFields() {
+        if (pointIdEl) {
+          pointIdEl.value = "";
+          pointIdEl.removeAttribute("data-lat");
+          pointIdEl.removeAttribute("data-lon");
+        }
+        if (reasonEl) reasonEl.value = "";
+        if (mapSourceEl) mapSourceEl.value = "webGIS";
+        if (accuracyEl) accuracyEl.value = "";
+        // Do NOT clear mappingObjectEl here — keep the base value so subsequent points can auto-increment
+      }
+
+      // Respondent change
+      var lastRid = "";
+      if (respondentIdEl)
+        respondentIdEl.addEventListener("change", function () {
+          var newRid = currentRespondentId();
+          if (lastRid && lastRid !== newRid) {
+            var countOld = pointsForRespondent(lastRid).length;
+            if (countOld > 0 && !confirm("Anda mengganti Respondent ID. Terdapat " + countOld + " titik milik Respondent " + lastRid + ". Lanjutkan?")) {
+              respondentIdEl.value = lastRid;
+              return;
+            }
+          }
+          lastRid = newRid;
+          updatePointsUI();
+        });
+
+      // Map click: place draggable temp marker and prefill point id + mapping object
+      // helper: compute next index for a base mapping object for a respondent
+      function getNextMappingIndex(base, rid) {
+        if (!base) return 1;
+        var prefix = base + "_";
+        var maxIndex = 0;
+        allPoints.forEach(function (p) {
+          if (rid && p.respondent_id !== rid) return;
+          if (!p.mapping_object) return;
+          if (p.mapping_object === base) {
+            maxIndex = Math.max(maxIndex, 1);
+            return;
+          }
+          if (p.mapping_object.indexOf(prefix) === 0) {
+            var tail = p.mapping_object.slice(prefix.length);
+            var n = parseInt(tail, 10);
+            if (!isNaN(n)) maxIndex = Math.max(maxIndex, n);
+          }
+        });
+        return maxIndex + 1;
+      }
+
+      map.on("click", function (e) {
+        if (tempMarker) map.removeLayer(tempMarker);
+        tempMarker = L.marker(e.latlng, { draggable: true }).addTo(map);
+        tempMarker.on("dragend", function (ev) {
+          var ll = ev.target.getLatLng();
+          if (pointIdEl) {
+            pointIdEl.dataset.lat = ll.lat;
+            pointIdEl.dataset.lon = ll.lng;
+          }
+        });
+
+        var rid = currentRespondentId() || "R?_";
+        var idx = 1;
+        if (currentRespondentId()) idx = pointsForRespondent(currentRespondentId()).length + 1;
+
+        if (pointIdEl) pointIdEl.value = rid + "_P" + idx;
+
+        // auto-fill mapping object
+        try {
+          if (mappingObjectEl) {
+            var val = mappingObjectEl.value ? mappingObjectEl.value.trim() : "";
+            if (!val) {
+              // previous behavior: generate respondent-based code
+              var mo = rid && rid !== "R?_" ? rid + "_MO" + idx : "MO_P" + (allPoints.length + 1);
+              mappingObjectEl.value = mo;
+            } else {
+              // Always compute next index for the provided base name.
+              // If user provided a suffixed value like Pendidikan_01, extract base.
+              var m = val.match(/^(.*?)[_\-]?0*(\d+)$/);
+              var base = m && m[1] ? m[1] : val;
+              // compute next index based on existing points for this respondent and base name
+              var next = getNextMappingIndex(base, currentRespondentId());
+              var formatted = next < 10 ? "0" + next : "" + next;
+              mappingObjectEl.value = base + "_" + formatted;
+            }
+          }
+        } catch (err) {
+          /* ignore */
+        }
+
+        if (pointIdEl) {
+          pointIdEl.dataset.lat = e.latlng.lat;
+          pointIdEl.dataset.lon = e.latlng.lng;
+        }
+      });
+
+      // Save point
+      if (saveBtn)
+        saveBtn.addEventListener("click", function () {
+          var rid = currentRespondentId();
+          if (!rid && !confirm("Anda belum mengisi Respondent ID. Lanjutkan tanpa respondent_id?")) return;
+          if (!pointIdEl || !pointIdEl.dataset.lat || !pointIdEl.dataset.lon) {
+            alert("Silakan klik peta untuk memilih lokasi terlebih dahulu.");
+            return;
+          }
+
+          var lat = parseFloat(pointIdEl.dataset.lat);
+          var lon = parseFloat(pointIdEl.dataset.lon);
+          var pid = "";
+          if (pointIdEl.value && pointIdEl.value.trim()) pid = pointIdEl.value.trim();
+          else pid = rid ? rid + "_P" + (pointsForRespondent(rid).length + 1) : "P" + (allPoints.length + 1);
+
+          if (
+            allPoints.some(function (x) {
+              return x.point_id === pid && x.respondent_id === rid;
+            })
+          ) {
+            pid = pid + "_" + (new Date().getTime() % 10000);
+          }
+
+          var acc = accuracyEl && accuracyEl.value ? accuracyEl.value.trim() : "";
+          if (acc && isNaN(Number(acc))) {
+            if (!confirm("Nilai accuracy bukan numerik. Simpan sebagai teks?")) return;
+          }
+
+          var rec = {
+            respondent_id: rid || "",
+            stakeholder_group: stakeholderEl ? stakeholderEl.value : "",
+            mapping_object: mappingObjectEl ? (mappingObjectEl.value ? mappingObjectEl.value.trim() : "") : "",
+            point_id: pid,
+            latitude: lat,
+            longitude: lon,
+            timestamp: new Date().toISOString(),
+            reason: reasonEl ? (reasonEl.value ? reasonEl.value.trim() : "") : "",
+            map_source: mapSourceEl ? mapSourceEl.value : "",
+            accuracy_m: acc,
+          };
+
+          var marker = L.circleMarker([lat, lon], { radius: 6, color: "#d9534f" }).addTo(map);
+          var popupParts = ["<b>" + pid + "</b>"];
+          if (rec.mapping_object) popupParts.push("<i>" + rec.mapping_object + "</i>");
+          if (rec.reason) popupParts.push(rec.reason);
+          marker.bindPopup(popupParts.join("<br/>"));
+
+          rec.marker = marker;
+          allPoints.push(rec);
+
+          if (tempMarker) {
+            map.removeLayer(tempMarker);
+            tempMarker = null;
+          }
+          resetFormFields();
+          updatePointsUI();
+        });
+
+      // Export helpers
+      function escapeCsvCell(s) {
+        if (s === null || s === undefined) return '""';
+        var str = String(s).replace(/\"/g, '""');
+        return '"' + str + '"';
+      }
+
+      function convertToCsv(arr) {
+        var header = ["respondent_id", "stakeholder_group", "mapping_object", "point_id", "latitude", "longitude", "timestamp", "reason", "map_source", "accuracy_m"];
+        var lines = [header.join(",")];
+        arr.forEach(function (r) {
+          var row = [
+            escapeCsvCell(r.respondent_id || ""),
+            escapeCsvCell(r.stakeholder_group || ""),
+            escapeCsvCell(r.mapping_object || ""),
+            escapeCsvCell(r.point_id || ""),
+            r.latitude != null ? r.latitude : "",
+            r.longitude != null ? r.longitude : "",
+            escapeCsvCell(r.timestamp || ""),
+            escapeCsvCell(r.reason || ""),
+            escapeCsvCell(r.map_source || ""),
+            escapeCsvCell(r.accuracy_m || ""),
+          ];
+          lines.push(row.join(","));
+        });
+        return lines.join("\n");
+      }
+
+      function downloadText(filename, text, mimeType) {
+        mimeType = mimeType || "text/csv;charset=utf-8;";
+        var bom = "\uFEFF";
+        var blob = new Blob([bom + text], { type: mimeType });
+        var link = document.createElement("a");
+        if (link.download !== undefined) {
+          var url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", filename);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } else alert("Browser Anda tidak mendukung pengunduhan otomatis.");
+      }
+
+      // Export CSV
+      if (exportCsvBtn)
+        exportCsvBtn.addEventListener("click", function () {
+          var rid = currentRespondentId();
+          var arr = [];
+          if (rid) {
+            var count = pointsForRespondent(rid).length;
+            if (count < 10 && !confirm("Perhatian: untuk respondent " + rid + " hanya terkumpul " + count + " titik. Minimum yang direkomendasikan adalah 10 titik. Apakah Anda tetap ingin mengekspor data ini?")) return;
+            arr = pointsForRespondent(rid);
+          } else {
+            if (!confirm("Tidak ada Respondent ID. Akan mengekspor semua titik (" + allPoints.length + "). Lanjutkan?")) return;
+            arr = allPoints;
+          }
+          if (!arr || arr.length === 0) {
+            alert("Tidak ada titik untuk diekspor.");
+            return;
+          }
+          var csv = convertToCsv(arr);
+          var fname = "preference_points_" + (rid ? rid : "all") + "_" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "_") + ".csv";
+          downloadText(fname, csv, "text/csv;charset=utf-8;");
+        });
+
+      // Export GeoJSON
+      if (exportGeoBtn)
+        exportGeoBtn.addEventListener("click", function () {
+          var rid = currentRespondentId();
+          var arr = [];
+          if (rid) {
+            var count = pointsForRespondent(rid).length;
+            if (count < 10 && !confirm("Perhatian: untuk respondent " + rid + " hanya terkumpul " + count + " titik. Minimum yang direkomendasikan adalah 10 titik. Apakah Anda tetap ingin mengekspor data ini?")) return;
+            arr = pointsForRespondent(rid);
+          } else {
+            if (!confirm("Tidak ada Respondent ID. Akan mengekspor semua titik (" + allPoints.length + "). Lanjutkan?")) return;
+            arr = allPoints;
+          }
+          if (!arr || arr.length === 0) {
+            alert("Tidak ada titik untuk diekspor.");
+            return;
+          }
+          var gj = { type: "FeatureCollection", features: [] };
+          arr.forEach(function (p) {
+            var f = {
+              type: "Feature",
+              properties: {
+                respondent_id: p.respondent_id,
+                stakeholder_group: p.stakeholder_group,
+                mapping_object: p.mapping_object,
+                point_id: p.point_id,
+                timestamp: p.timestamp,
+                reason: p.reason,
+                map_source: p.map_source,
+                accuracy_m: p.accuracy_m,
+              },
+              geometry: { type: "Point", coordinates: [p.longitude, p.latitude] },
+            };
+            gj.features.push(f);
+          });
+          var fname = "preference_points_geojson_" + (rid ? rid : "all") + "_" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "_") + ".geojson";
+          downloadText(fname, JSON.stringify(gj), "application/geo+json;charset=utf-8;");
+        });
+
+      // Clear all
+      if (clearAllBtn)
+        clearAllBtn.addEventListener("click", function () {
+          if (!confirm("Hapus semua titik?")) return;
+          allPoints.forEach(function (p) {
+            if (p.marker) map.removeLayer(p.marker);
+          });
+          allPoints = [];
+          updatePointsUI();
+        });
+
+      // Center Btn
+      if (centerBtn)
+        centerBtn.addEventListener("click", function () {
+          if (navigator.geolocation)
+            navigator.geolocation.getCurrentPosition(
+              function (pos) {
+                map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+              },
+              function () {
+                alert("Tidak dapat memperoleh lokasi saat ini.");
+              }
+            );
+          else alert("Geolocation tidak tersedia di browser ini.");
+        });
+
+      // Right-panel handlers
+      if (getLocationBtn)
+        getLocationBtn.addEventListener("click", function () {
+          if (!navigator.geolocation) {
+            alert("Geolocation tidak tersedia di browser ini.");
+            return;
+          }
+          getLocationBtn.disabled = true;
+          getLocationBtn.textContent = "Locating...";
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              var lat = pos.coords.latitude,
+                lon = pos.coords.longitude;
+              map.setView([lat, lon], 16);
+              var m = L.circleMarker([lat, lon], { radius: 8, color: "#337ab7" }).addTo(map);
+              m.bindPopup("<b>Your location</b>").openPopup();
+              setTimeout(function () {
+                if (map && m) map.removeLayer(m);
+              }, 10000);
+              getLocationBtn.disabled = false;
+              getLocationBtn.textContent = "Get my location";
+            },
+            function (err) {
+              alert("Gagal mendapatkan lokasi: " + (err.message || "permission denied"));
+              getLocationBtn.disabled = false;
+              getLocationBtn.textContent = "Get my location";
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        });
+      if (zoomInBtn)
+        zoomInBtn.addEventListener("click", function () {
+          map.zoomIn();
+        });
+      if (zoomOutBtn)
+        zoomOutBtn.addEventListener("click", function () {
+          map.zoomOut();
+        });
+
+      // avoid auto-center on load
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function () {},
+          function () {},
+          { enableHighAccuracy: false }
+        );
+      }
+
+      // --- Administrative layers (user must provide GeoJSON files in /data/) ---
+      // Expected filenames (place in repository /data folder):
+      // - data/WADMPR.geojson  (Provinsi)
+      // - data/WADMKK.geojson  (Kabupaten/Kota)
+      // - data/WADMKC.geojson  (Kecamatan)
+      // - data/WADMKD.geojson  (Desa)
+
+      var adminLayers = {
+        WADMPR: null, // province
+        WADMKK: null, // kab/kota
+        WADMKC: null, // kecamatan
+        WADMKD: null, // desa
+      };
+
+      function styleFor(level) {
+        // level: 'prov','kab','kec','desa'
+        switch (level) {
+          case "prov":
+            return { color: "#4b2e83", weight: 5, fill: false, opacity: 0.9 };
+          case "kab":
+            return { color: "#2b7fb8", weight: 3.5, fill: false, opacity: 0.9 };
+          case "kec":
+            return { color: "#2c7a3e", weight: 2.5, fill: false, opacity: 0.9 };
+          case "desa":
+            return { color: "#666", weight: 1.5, fill: false, opacity: 0.9 };
+          default:
+            return { color: "#000", weight: 1, fill: false };
+        }
+      }
+
+      async function loadAdminGeojson(key, url, level) {
+        // If INLINE_GEOJSON has data for this key, use it directly to avoid fetch issues
+        try {
+          if (typeof INLINE_GEOJSON !== "undefined" && INLINE_GEOJSON[key] && INLINE_GEOJSON[key].features && INLINE_GEOJSON[key].features.length > 0) {
+            console.log("Using INLINE_GEOJSON for", key);
+            // remove old layer
+            if (adminLayers[key]) {
+              try {
+                map.removeLayer(adminLayers[key]);
+              } catch (e) {}
+              adminLayers[key] = null;
+            }
+            var gj = INLINE_GEOJSON[key];
+            var layer = L.geoJSON(gj, {
+              style: styleFor(level),
+              onEachFeature: function (feature, lyr) {
+                var props = feature && feature.properties ? feature.properties : {};
+                var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "";
+                if (name) lyr.bindTooltip(String(name), { permanent: true, direction: "center", className: "admin-label" });
+              },
+            }).addTo(map);
+            if (level === "prov") {
+              try {
+                if (layer.bringToBack) layer.bringToBack();
+              } catch (e) {}
+            }
+            if (level === "desa") {
+              try {
+                if (layer.bringToFront) layer.bringToFront();
+              } catch (e) {}
+            }
+            adminLayers[key] = layer;
+            removeAdminDebugEntry(key);
+            return layer;
+          }
+        } catch (e) {
+          console.warn("INLINE_GEOJSON check failed", e);
+        }
+
+        // Enhanced loader: try candidates and collect detailed errors for debugging and UI feedback
+        var candidates = [url];
+        var parts = url.split("/");
+        var fname = parts.pop();
+        candidates.push(parts.concat([fname.toLowerCase()]).join("/"));
+        if (fname.toLowerCase().endsWith(".geojson")) candidates.push(parts.concat([fname.replace(/\.geojson$/i, ".json")]).join("/"));
+        if (url.indexOf("data/") === 0) candidates.push(url.replace(/^data\//, ""));
+        // try absolute path based on current location
+        try {
+          var base = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
+          candidates.push(base + "/" + url);
+          candidates.push(base + "/data/" + fname);
+        } catch (e) {}
+        candidates = candidates.filter(function (v, i) {
+          return candidates.indexOf(v) === i;
+        });
+
+        // remove old layer
+        if (adminLayers[key]) {
+          try {
+            map.removeLayer(adminLayers[key]);
+          } catch (e) {}
+          adminLayers[key] = null;
+        }
+
+        var errors = [];
+        for (var i = 0; i < candidates.length; i++) {
+          var u = candidates[i];
+          try {
+            var resp = await fetch(u, { cache: "no-store" });
+            if (!resp.ok) {
+              errors.push({ url: u, status: resp.status });
+              continue;
+            }
+            var gj = await resp.json();
+            var layer = L.geoJSON(gj, {
+              style: styleFor(level),
+              onEachFeature: function (feature, lyr) {
+                var props = feature && feature.properties ? feature.properties : {};
+                var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "";
+                if (name) lyr.bindTooltip(String(name), { permanent: true, direction: "center", className: "admin-label" });
+              },
+            }).addTo(map);
+            if (level === "prov") {
+              try {
+                if (layer.bringToBack) layer.bringToBack();
+              } catch (e) {}
+            }
+            if (level === "desa") {
+              try {
+                if (layer.bringToFront) layer.bringToFront();
+              } catch (e) {}
+            }
+            adminLayers[key] = layer;
+            console.log("Loaded", key, "from", u);
+            // clear previous debug panel entry for this key
+            removeAdminDebugEntry(key);
+            return layer;
+          } catch (err) {
+            errors.push({ url: u, error: err && err.message ? err.message : String(err) });
+            continue;
+          }
+        }
+        // failed all candidates — surface detailed error in console and UI
+        console.error("Failed loading", key, errors);
+        showAdminDebugEntry(key, errors);
+        throw new Error("Failed to load " + key + ". See debug panel for attempted URLs and errors.");
+      }
+
+      // helper: show debug info for admin layer load failures in sidebarRight
+      function showAdminDebugEntry(key, errors) {
+        var containerId = "admin_debug_" + key;
+        // remove existing
+        var existing = document.getElementById(containerId);
+        if (existing) existing.parentNode.removeChild(existing);
+        var cont = document.createElement("div");
+        cont.id = containerId;
+        cont.style.marginTop = "8px";
+        cont.style.padding = "6px";
+        cont.style.background = "rgba(255,240,240,0.95)";
+        cont.style.border = "1px solid #f2a0a0";
+        cont.style.borderRadius = "6px";
+        cont.innerHTML = "<b>Failed to load " + key + "</b><br/>" + '<div style="font-size:12px; margin-top:6px;">Attempted URLs:</div>';
+        var ul = document.createElement("ul");
+        errors.forEach(function (er) {
+          var li = document.createElement("li");
+          if (er.status) li.textContent = er.url + " — HTTP " + er.status;
+          else li.textContent = er.url + " — " + (er.error || "network error");
+          ul.appendChild(li);
+        });
+        cont.appendChild(ul);
+        var help = document.createElement("div");
+        help.style.fontSize = "12px";
+        help.style.marginTop = "6px";
+        help.innerHTML = "Pastikan file tersedia di folder <code>/data/</code> dengan nama yang tepat (case-sensitive). Jika Anda menggunakan GitHub Pages, tunggu beberapa detik setelah commit agar file tersedia.";
+        cont.appendChild(help);
+        document.getElementById("sidebarRight").appendChild(cont);
+      }
+
+      function removeAdminDebugEntry(key) {
+        var containerId = "admin_debug_" + key;
+        var existing = document.getElementById(containerId);
+        if (existing) existing.parentNode.removeChild(existing);
+      }
+
+      // build admin controls UI and attach handlers
+      (function () {
+        var adminControls = document.createElement("div");
+        adminControls.style.marginTop = "12px";
+        adminControls.innerHTML =
+          "<b>Administrative layers</b><br/>" +
+          '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_WADMPR" /> Provinsi</label>' +
+          '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_WADMKK" /> Kabupaten/Kota</label>' +
+          '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_WADMKC" /> Kecamatan</label>' +
+          '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_WADMKD" /> Desa</label>' +
+          '<div style="margin-top:8px;"><button id="btn_load_all_admin" class="btn tertiary">Load All</button></div>';
+        document.getElementById("sidebarRight").appendChild(adminControls);
+
+        function setup(id, key, url, level) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener("change", function () {
+            if (el.checked) {
+              loadAdminGeojson(key, url, level)
+                .then(function () {
+                  // success
+                })
+                .catch(function (err) {
+                  alert("Gagal memuat " + key + ": " + (err && err.message ? err.message : err));
+                  el.checked = false;
+                });
+            } else {
+              if (adminLayers[key]) {
+                try {
+                  map.removeLayer(adminLayers[key]);
+                } catch (e) {}
+                adminLayers[key] = null;
+              }
+            }
+          });
+        }
+
+        setup("chk_WADMPR", "WADMPR", "data/WADMPR.geojson", "prov");
+        setup("chk_WADMKK", "WADMKK", "data/WADMKK.geojson", "kab");
+        setup("chk_WADMKC", "WADMKC", "data/WADMKC.geojson", "kec");
+        setup("chk_WADMKD", "WADMKD", "data/WADMKD.geojson", "desa");
+
+        var btnAll = document.getElementById("btn_load_all_admin");
+        if (btnAll)
+          btnAll.addEventListener("click", function () {
+            Promise.all([
+              loadAdminGeojson("WADMPR", "data/WADMPR.geojson", "prov").catch(function (e) {
+                console.warn(e);
+              }),
+              loadAdminGeojson("WADMKK", "data/WADMKK.geojson", "kab").catch(function (e) {
+                console.warn(e);
+              }),
+              loadAdminGeojson("WADMKC", "data/WADMKC.geojson", "kec").catch(function (e) {
+                console.warn(e);
+              }),
+              loadAdminGeojson("WADMKD", "data/WADMKD.geojson", "desa").catch(function (e) {
+                console.warn(e);
+              }),
+            ])
+              .then(function () {
+                // mark checkboxes if layers loaded
+                ["WADMPR", "WADMKK", "WADMKC", "WADMKD"].forEach(function (k) {
+                  var cb = document.getElementById("chk_" + k);
+                  if (cb) cb.checked = !!adminLayers[k];
+                });
+              })
+              .catch(function () {
+                // already logged per-layer
+              });
+          });
+      })();
+    </script>
+  </body>
+</html>
