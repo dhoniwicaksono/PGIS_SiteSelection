@@ -1012,11 +1012,9 @@
             var layer = adminLayers[k];
             try {
               if (!layer) return;
-              // prefer to dim via setStyle if available
-              if (typeof layer.setStyle === "function") {
-                layer.setStyle({ color: "rgba(0,0,0,0)", weight: 0, opacity: 0, fillOpacity: 0 });
-              } else {
-                if (map.hasLayer && map.hasLayer(layer)) map.removeLayer(layer);
+              // FIX: Remove layer completely so tooltips disappear too
+              if (map.hasLayer(layer)) {
+                map.removeLayer(layer);
               }
             } catch (e) {
               console.warn("hideAllAdminLayers err", e);
@@ -1161,6 +1159,8 @@
           document.getElementById("search_admin_query").value = "";
           document.getElementById("admin_search_results").innerHTML = "";
           clearHighlight();
+          // FIX: Restore logic added to clear handler to reset map state
+          restoreAdminLayers();
         });
       })();
     </script>
