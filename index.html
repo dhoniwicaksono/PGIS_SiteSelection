@@ -448,7 +448,332 @@
       // --- Administrative layers (external data/) ---
       var adminLayers = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null };
       // track level mapping so we can restore styles later
-      var adminLayerLevels = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null }; 
+      var adminLayerLevels = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null };
+
+      // --- Government offices POI layer (unique-value symbology by "kategori") ---
+      var govOfficesLayer = null;
+      var govDataUrl = 'data/TOPONIMI_KANTORPEMERINTAH_PT.geojson';
+
+      // mapping kategori -> style (minimal, hierarchical)
+      var govStyleMap = {
+        'Kantor Gubernur': { radius: 10, color: '#800026', weight: 2, fillColor:'#ffdddd' },
+        'Kantor Bupati':   { radius: 8,  color: '#bd0026', weight: 2, fillColor:'#ffd6d6' },
+        'Kantor Wali Kota':{ radius: 8,  color: '#e31a1c', weight: 2, fillColor:'#ffe6e6' },
+        'Kantor Kalurahan (setingkat desa)': { radius:6, color:'#fc4e2a', weight:1.5, fillColor:'#fff0eb' },
+        'Kantor Kemantren (setingkat desa)': { radius:6, color:'#fd8d3c', weight:1.5, fillColor:'#fff5e6' },
+        'Kantor Kelurahan (di bawah administrasi kemantren)': { radius:4, color:'#feb24c', weight:1, fillColor:'#fff8ec' }
+      };
+
+      function getGovStyleForFeature(feat){
+        var props = feat && feat.properties ? feat.properties : {};
+        var k = props.kategori || props.KATEGORI || props.Kategori || '';
+        var s = govStyleMap[k] || { radius:4, color:'#555', weight:1, fillColor:'#fff' };
+        return s;
+      }
+
+      function getGovLabel(feat){
+        var p = feat && feat.properties ? feat.properties : {};
+        return p.NAMOBJ || p.name || p.nama || p.NAMA || p.Label || '';
+      }
+
+      async function loadGovOffices() {
+        if (govOfficesLayer) { try{ map.removeLayer(govOfficesLayer); }catch(e){} govOfficesLayer=null; }
+        try {
+          var resp = await fetch(govDataUrl, { cache:'no-store' });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          var gj = await resp.json();
+          govOfficesLayer = L.geoJSON(gj, {
+            pointToLayer: function(feature, latlng){
+              var s = getGovStyleForFeature(feature);
+              return L.circleMarker(latlng, { radius: s.radius, color: s.color, weight: s.weight, fillColor: s.fillColor, fillOpacity:0.9 });
+            },
+            onEachFeature: function(feature, layer){
+              var label = getGovLabel(feature) || feature.properties.kategori || '';
+              if (label) layer.bindTooltip(String(label), { direction:'top', offset:[0,-8], className:'admin-label' , permanent:false });
+            }
+          }).addTo(map);
+          console.log('Loaded gov offices from', govDataUrl);
+        } catch(err) {
+          console.error('Failed loading gov offices', err);
+          alert('Gagal memuat layer kantor pemerintahan: ' + (err && err.message ? err.message : err));
+        }
+      }
+
+      // add control in sidebarRight for gov offices
+      (function(){
+        var cont = document.createElement('div'); cont.style.marginTop='12px';
+        cont.innerHTML = '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_gov_offices"> Tampilkan Kantor Pemerintah</label>';
+        document.getElementById('sidebarRight').appendChild(cont);
+        var cb = document.getElementById('chk_gov_offices');
+        cb.addEventListener('change', function(){
+          if (cb.checked) {
+            // load if not yet
+            if (!govOfficesLayer) loadGovOffices(); else map.addLayer(govOfficesLayer);
+          } else {
+            if (govOfficesLayer && map.hasLayer(govOfficesLayer)) map.removeLayer(govOfficesLayer);
+          }
+        });
+      })();
+
+      // --- Government offices POI layer (unique-value symbology by "kategori") ---
+      var govOfficesLayer = null;
+      var govDataUrl = 'data/TOPONIMI_KANTORPEMERINTAH_PT.geojson';
+
+      // mapping kategori -> style (minimal, hierarchical)
+      var govStyleMap = {
+        'Kantor Gubernur': { radius: 10, color: '#800026', weight: 2, fillColor:'#ffdddd' },
+        'Kantor Bupati':   { radius: 8,  color: '#bd0026', weight: 2, fillColor:'#ffd6d6' },
+        'Kantor Wali Kota':{ radius: 8,  color: '#e31a1c', weight: 2, fillColor:'#ffe6e6' },
+        'Kantor Kalurahan (setingkat desa)': { radius:6, color:'#fc4e2a', weight:1.5, fillColor:'#fff0eb' },
+        'Kantor Kemantren (setingkat desa)': { radius:6, color:'#fd8d3c', weight:1.5, fillColor:'#fff5e6' },
+        'Kantor Kelurahan (di bawah administrasi kemantren)': { radius:4, color:'#feb24c', weight:1, fillColor:'#fff8ec' }
+      };
+
+      function getGovStyleForFeature(feat){
+        var props = feat && feat.properties ? feat.properties : {};
+        var k = props.kategori || props.KATEGORI || props.Kategori || '';
+        var s = govStyleMap[k] || { radius:4, color:'#555', weight:1, fillColor:'#fff' };
+        return s;
+      }
+
+      function getGovLabel(feat){
+        var p = feat && feat.properties ? feat.properties : {};
+        return p.NAMOBJ || p.name || p.nama || p.NAMA || p.Label || '';
+      }
+
+      async function loadGovOffices() {
+        if (govOfficesLayer) { try{ map.removeLayer(govOfficesLayer); }catch(e){} govOfficesLayer=null; }
+        try {
+          var resp = await fetch(govDataUrl, { cache:'no-store' });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          var gj = await resp.json();
+          govOfficesLayer = L.geoJSON(gj, {
+            pointToLayer: function(feature, latlng){
+              var s = getGovStyleForFeature(feature);
+              return L.circleMarker(latlng, { radius: s.radius, color: s.color, weight: s.weight, fillColor: s.fillColor, fillOpacity:0.9 });
+            },
+            onEachFeature: function(feature, layer){
+              var label = getGovLabel(feature) || feature.properties.kategori || '';
+              if (label) layer.bindTooltip(String(label), { direction:'top', offset:[0,-8], className:'admin-label' , permanent:false });
+            }
+          }).addTo(map);
+          console.log('Loaded gov offices from', govDataUrl);
+        } catch(err) {
+          console.error('Failed loading gov offices', err);
+          alert('Gagal memuat layer kantor pemerintahan: ' + (err && err.message ? err.message : err));
+        }
+      }
+
+      // add control in sidebarRight for gov offices
+      (function(){
+        var cont = document.createElement('div'); cont.style.marginTop='12px';
+        cont.innerHTML = '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_gov_offices"> Tampilkan Kantor Pemerintah</label>';
+        document.getElementById('sidebarRight').appendChild(cont);
+        var cb = document.getElementById('chk_gov_offices');
+        cb.addEventListener('change', function(){
+          if (cb.checked) {
+            // load if not yet
+            if (!govOfficesLayer) loadGovOffices(); else map.addLayer(govOfficesLayer);
+          } else {
+            if (govOfficesLayer && map.hasLayer(govOfficesLayer)) map.removeLayer(govOfficesLayer);
+          }
+        });
+      })();
+
+      // --- Government offices POI layer (unique-value symbology by "kategori") ---
+      var govOfficesLayer = null;
+      var govDataUrl = 'data/TOPONIMI_KANTORPEMERINTAH_PT.geojson';
+
+      // mapping kategori -> style (minimal, hierarchical)
+      var govStyleMap = {
+        'Kantor Gubernur': { radius: 10, color: '#800026', weight: 2, fillColor:'#ffdddd' },
+        'Kantor Bupati':   { radius: 8,  color: '#bd0026', weight: 2, fillColor:'#ffd6d6' },
+        'Kantor Wali Kota':{ radius: 8,  color: '#e31a1c', weight: 2, fillColor:'#ffe6e6' },
+        'Kantor Kalurahan (setingkat desa)': { radius:6, color:'#fc4e2a', weight:1.5, fillColor:'#fff0eb' },
+        'Kantor Kemantren (setingkat desa)': { radius:6, color:'#fd8d3c', weight:1.5, fillColor:'#fff5e6' },
+        'Kantor Kelurahan (di bawah administrasi kemantren)': { radius:4, color:'#feb24c', weight:1, fillColor:'#fff8ec' }
+      };
+
+      function getGovStyleForFeature(feat){
+        var props = feat && feat.properties ? feat.properties : {};
+        var k = props.kategori || props.KATEGORI || props.Kategori || '';
+        var s = govStyleMap[k] || { radius:4, color:'#555', weight:1, fillColor:'#fff' };
+        return s;
+      }
+
+      function getGovLabel(feat){
+        var p = feat && feat.properties ? feat.properties : {};
+        return p.NAMOBJ || p.name || p.nama || p.NAMA || p.Label || '';
+      }
+
+      async function loadGovOffices() {
+        if (govOfficesLayer) { try{ map.removeLayer(govOfficesLayer); }catch(e){} govOfficesLayer=null; }
+        try {
+          var resp = await fetch(govDataUrl, { cache:'no-store' });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          var gj = await resp.json();
+          govOfficesLayer = L.geoJSON(gj, {
+            pointToLayer: function(feature, latlng){
+              var s = getGovStyleForFeature(feature);
+              return L.circleMarker(latlng, { radius: s.radius, color: s.color, weight: s.weight, fillColor: s.fillColor, fillOpacity:0.9 });
+            },
+            onEachFeature: function(feature, layer){
+              var label = getGovLabel(feature) || feature.properties.kategori || '';
+              if (label) layer.bindTooltip(String(label), { direction:'top', offset:[0,-8], className:'admin-label' , permanent:false });
+            }
+          }).addTo(map);
+          console.log('Loaded gov offices from', govDataUrl);
+        } catch(err) {
+          console.error('Failed loading gov offices', err);
+          alert('Gagal memuat layer kantor pemerintahan: ' + (err && err.message ? err.message : err));
+        }
+      }
+
+      // add control in sidebarRight for gov offices
+      (function(){
+        var cont = document.createElement('div'); cont.style.marginTop='12px';
+        cont.innerHTML = '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_gov_offices"> Tampilkan Kantor Pemerintah</label>';
+        document.getElementById('sidebarRight').appendChild(cont);
+        var cb = document.getElementById('chk_gov_offices');
+        cb.addEventListener('change', function(){
+          if (cb.checked) {
+            // load if not yet
+            if (!govOfficesLayer) loadGovOffices(); else map.addLayer(govOfficesLayer);
+          } else {
+            if (govOfficesLayer && map.hasLayer(govOfficesLayer)) map.removeLayer(govOfficesLayer);
+          }
+        });
+      })();
+
+      // --- Government offices POI layer (unique-value symbology by "kategori") ---
+      var govOfficesLayer = null;
+      var govDataUrl = 'data/TOPONIMI_KANTORPEMERINTAH_PT.geojson';
+
+      // mapping kategori -> style (minimal, hierarchical)
+      var govStyleMap = {
+        'Kantor Gubernur': { radius: 10, color: '#800026', weight: 2, fillColor:'#ffdddd' },
+        'Kantor Bupati':   { radius: 8,  color: '#bd0026', weight: 2, fillColor:'#ffd6d6' },
+        'Kantor Wali Kota':{ radius: 8,  color: '#e31a1c', weight: 2, fillColor:'#ffe6e6' },
+        'Kantor Kalurahan (setingkat desa)': { radius:6, color:'#fc4e2a', weight:1.5, fillColor:'#fff0eb' },
+        'Kantor Kemantren (setingkat desa)': { radius:6, color:'#fd8d3c', weight:1.5, fillColor:'#fff5e6' },
+        'Kantor Kelurahan (di bawah administrasi kemantren)': { radius:4, color:'#feb24c', weight:1, fillColor:'#fff8ec' }
+      };
+
+      function getGovStyleForFeature(feat){
+        var props = feat && feat.properties ? feat.properties : {};
+        var k = props.kategori || props.KATEGORI || props.Kategori || '';
+        var s = govStyleMap[k] || { radius:4, color:'#555', weight:1, fillColor:'#fff' };
+        return s;
+      }
+
+      function getGovLabel(feat){
+        var p = feat && feat.properties ? feat.properties : {};
+        return p.NAMOBJ || p.name || p.nama || p.NAMA || p.Label || '';
+      }
+
+      async function loadGovOffices() {
+        if (govOfficesLayer) { try{ map.removeLayer(govOfficesLayer); }catch(e){} govOfficesLayer=null; }
+        try {
+          var resp = await fetch(govDataUrl, { cache:'no-store' });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          var gj = await resp.json();
+          govOfficesLayer = L.geoJSON(gj, {
+            pointToLayer: function(feature, latlng){
+              var s = getGovStyleForFeature(feature);
+              return L.circleMarker(latlng, { radius: s.radius, color: s.color, weight: s.weight, fillColor: s.fillColor, fillOpacity:0.9 });
+            },
+            onEachFeature: function(feature, layer){
+              var label = getGovLabel(feature) || feature.properties.kategori || '';
+              if (label) layer.bindTooltip(String(label), { direction:'top', offset:[0,-8], className:'admin-label' , permanent:false });
+            }
+          }).addTo(map);
+          console.log('Loaded gov offices from', govDataUrl);
+        } catch(err) {
+          console.error('Failed loading gov offices', err);
+          alert('Gagal memuat layer kantor pemerintahan: ' + (err && err.message ? err.message : err));
+        }
+      }
+
+      // add control in sidebarRight for gov offices
+      (function(){
+        var cont = document.createElement('div'); cont.style.marginTop='12px';
+        cont.innerHTML = '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_gov_offices"> Tampilkan Kantor Pemerintah</label>';
+        document.getElementById('sidebarRight').appendChild(cont);
+        var cb = document.getElementById('chk_gov_offices');
+        cb.addEventListener('change', function(){
+          if (cb.checked) {
+            // load if not yet
+            if (!govOfficesLayer) loadGovOffices(); else map.addLayer(govOfficesLayer);
+          } else {
+            if (govOfficesLayer && map.hasLayer(govOfficesLayer)) map.removeLayer(govOfficesLayer);
+          }
+        });
+      })();
+
+      // --- Government offices POI layer (unique-value symbology by "kategori") ---
+      var govOfficesLayer = null;
+      var govDataUrl = 'data/TOPONIMI_KANTORPEMERINTAH_PT.geojson';
+
+      // mapping kategori -> style (minimal, hierarchical)
+      var govStyleMap = {
+        'Kantor Gubernur': { radius: 10, color: '#800026', weight: 2, fillColor:'#ffdddd' },
+        'Kantor Bupati':   { radius: 8,  color: '#bd0026', weight: 2, fillColor:'#ffd6d6' },
+        'Kantor Wali Kota':{ radius: 8,  color: '#e31a1c', weight: 2, fillColor:'#ffe6e6' },
+        'Kantor Kalurahan (setingkat desa)': { radius:6, color:'#fc4e2a', weight:1.5, fillColor:'#fff0eb' },
+        'Kantor Kemantren (setingkat desa)': { radius:6, color:'#fd8d3c', weight:1.5, fillColor:'#fff5e6' },
+        'Kantor Kelurahan (di bawah administrasi kemantren)': { radius:4, color:'#feb24c', weight:1, fillColor:'#fff8ec' }
+      };
+
+      function getGovStyleForFeature(feat){
+        var props = feat && feat.properties ? feat.properties : {};
+        var k = props.kategori || props.KATEGORI || props.Kategori || '';
+        var s = govStyleMap[k] || { radius:4, color:'#555', weight:1, fillColor:'#fff' };
+        return s;
+      }
+
+      function getGovLabel(feat){
+        var p = feat && feat.properties ? feat.properties : {};
+        return p.NAMOBJ || p.name || p.nama || p.NAMA || p.Label || '';
+      }
+
+      async function loadGovOffices() {
+        if (govOfficesLayer) { try{ map.removeLayer(govOfficesLayer); }catch(e){} govOfficesLayer=null; }
+        try {
+          var resp = await fetch(govDataUrl, { cache:'no-store' });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          var gj = await resp.json();
+          govOfficesLayer = L.geoJSON(gj, {
+            pointToLayer: function(feature, latlng){
+              var s = getGovStyleForFeature(feature);
+              return L.circleMarker(latlng, { radius: s.radius, color: s.color, weight: s.weight, fillColor: s.fillColor, fillOpacity:0.9 });
+            },
+            onEachFeature: function(feature, layer){
+              var label = getGovLabel(feature) || feature.properties.kategori || '';
+              if (label) layer.bindTooltip(String(label), { direction:'top', offset:[0,-8], className:'admin-label' , permanent:false });
+            }
+          }).addTo(map);
+          console.log('Loaded gov offices from', govDataUrl);
+        } catch(err) {
+          console.error('Failed loading gov offices', err);
+          alert('Gagal memuat layer kantor pemerintahan: ' + (err && err.message ? err.message : err));
+        }
+      }
+
+      // add control in sidebarRight for gov offices
+      (function(){
+        var cont = document.createElement('div'); cont.style.marginTop='12px';
+        cont.innerHTML = '<label style="display:block;margin-top:6px;"><input type="checkbox" id="chk_gov_offices"> Tampilkan Kantor Pemerintah</label>';
+        document.getElementById('sidebarRight').appendChild(cont);
+        var cb = document.getElementById('chk_gov_offices');
+        cb.addEventListener('change', function(){
+          if (cb.checked) {
+            // load if not yet
+            if (!govOfficesLayer) loadGovOffices(); else map.addLayer(govOfficesLayer);
+          } else {
+            if (govOfficesLayer && map.hasLayer(govOfficesLayer)) map.removeLayer(govOfficesLayer);
+          }
+        });
+      })(); 
 
       function styleFor(level) {
         switch(level) {
@@ -477,258 +802,4 @@
             if (!resp.ok) { errors.push({url:u, status:resp.status}); continue; }
             var gj = await resp.json();
             var layer = L.geoJSON(gj, {
-              style: styleFor(level),
-              onEachFeature: function(feature, lyr){
-                var props = feature && feature.properties ? feature.properties : {};
-                var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || '';
-                var cls = 'admin-label admin-label-' + level;
-                if (name) lyr.bindTooltip(String(name), { permanent:true, direction:'center', className: cls });
-              }
-            }).addTo(map);
-            if (level === 'prov') try{ if (layer.bringToBack) layer.bringToBack(); }catch(e){}
-            if (level === 'desa') try{ if (layer.bringToFront) layer.bringToFront(); }catch(e){}
-            adminLayers[key] = layer;
-            adminLayerLevels[key] = level;
-            // remove any debug entry
-            var dbg = document.getElementById('admin_debug_' + key); if (dbg) dbg.remove();
-            console.log('Loaded', key, 'from', u);
-            return layer;
-          } catch(err) {
-            errors.push({url:u, error: err && err.message ? err.message : String(err)});
-            continue;
-          }
-        }
-        // show debug panel
-        var container = document.getElementById('sidebarRight');
-        var panel = document.createElement('div'); panel.id = 'admin_debug_' + key; panel.style.background='rgba(255,240,240,0.95)'; panel.style.padding='6px'; panel.style.marginTop='8px'; panel.style.border='1px solid #f2a0a0'; panel.style.borderRadius='6px';
-        var html = '<b>Failed to load ' + key + '</b><br/><div style="font-size:12px;margin-top:6px">Attempted URLs:</div><ul>';
-        errors.forEach(function(e){ if (e.status) html += '<li>' + e.url + ' — HTTP ' + e.status + '</li>'; else html += '<li>' + e.url + ' — ' + (e.error||'network error') + '</li>'; });
-        html += '</ul><div style="font-size:12px;margin-top:6px">Pastikan file tersedia di folder <code>/data/</code> dengan nama yang tepat (case-sensitive).</div>';
-        panel.innerHTML = html; container.appendChild(panel);
-        console.error('Failed loading', key, errors);
-        throw new Error('Failed to load ' + key);
-      }
-
-      function keyForLevel(level) { switch(level){ case 'prov': return 'WADMPR'; case 'kab': return 'WADMKK'; case 'kec': return 'WADMKC'; case 'desa': return 'WADMKD'; default: return 'WADMPR'; } }
-      function urlForKey(key){ return { WADMPR:'data/WADMPR.geojson', WADMKK:'data/WADMKK.geojson', WADMKC:'data/WADMKC.geojson', WADMKD:'data/WADMKD.geojson' }[key]; }
-      function matchName(props){ return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || '').toString(); }
-
-      // build Search by Administrative UI (hidden layer controls)
-      (function(){
-        var searchContainer = document.createElement('div');
-        searchContainer.style.marginTop = '12px';
-        searchContainer.innerHTML = '<b>Search by Administrative</b><br/>' +
-          '<label style="display:block;margin-top:6px; font-weight:600;">Level</label>' +
-          '<select id="search_admin_level" style="width:100%; padding:6px; box-sizing:border-box">' +
-            '<option value="prov">Provinsi</option>' +
-            '<option value="kab">Kabupaten/Kota</option>' +
-            '<option value="kec">Kecamatan</option>' +
-            '<option value="desa">Desa</option>' +
-          '</select>' +
-          '<label style="display:block;margin-top:8px; font-weight:600;">Nama wilayah</label>' +
-          '<div style="position:relative">' +
-            '<input id="search_admin_query" type="text" autocomplete="off" placeholder="Masukkan nama (mis. Jawa Tengah)" style="width:100%; padding:6px; box-sizing:border-box" />' +
-            '<div id="admin_suggestions" style="position:absolute; left:0; right:0; top:40px; background:#fff; border:1px solid #ddd; max-height:180px; overflow:auto; display:none; z-index:2000;"></div>' +
-          '</div>' +
-          '<div style="display:flex; gap:8px; margin-top:8px;">' +
-            '<button id="btn_admin_search" class="btn">Search</button>' +
-            '<button id="btn_admin_clear" class="btn secondary">Clear</button>' +
-          '</div>' +
-          '<div id="admin_search_results" style="margin-top:8px; max-height:200px; overflow:auto; font-size:13px"></div>';
-        document.getElementById('sidebarRight').appendChild(searchContainer);
-
-        var suggestionBox = document.getElementById('admin_suggestions');
-        var queryInput = document.getElementById('search_admin_query');
-
-        function debounce(fn, wait){ var t; return function(){ var args=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(null, args); }, wait); }; }
-
-        function getNamesFromLayer(key){
-          return new Promise(function(resolve, reject){
-            var layer = adminLayers[key];
-            if (!layer) return reject(new Error('Layer not loaded'));
-            var set = {}; var list = [];
-            layer.eachLayer(function(l){
-              var feat = l.feature; var props = feat && feat.properties ? feat.properties : {};
-              var name = matchName(props);
-              if (!name) return;
-              var n = String(name).trim();
-              if (n && !set[n.toLowerCase()]){ set[n.toLowerCase()] = true; list.push(n); }
-            });
-            resolve(list.sort(function(a,b){ return a.localeCompare(b); }));
-          });
-        }
-
-        function fetchNamesFromGeojson(url){
-          return fetch(url, {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function(gj){
-            var set = {}; var list = [];
-            if (!gj || !gj.features) return [];
-            gj.features.forEach(function(f){ var props = f.properties || {}; var name = matchName(props); if(!name) return; var n=String(name).trim(); if(n && !set[n.toLowerCase()]){ set[n.toLowerCase()]=true; list.push(n); } });
-            return list.sort(function(a,b){ return a.localeCompare(b); });
-          }).catch(function(){ return []; });
-        }
-
-        function showSuggestions(arr){
-          if (!arr || arr.length === 0){ suggestionBox.style.display = 'none'; suggestionBox.innerHTML = ''; return; }
-          suggestionBox.innerHTML = '';
-          var max = Math.min(arr.length, 10);
-          for (var i=0;i<max;i++){
-            var item = document.createElement('div');
-            item.style.padding = '6px 8px';
-            item.style.borderBottom = '1px solid #f1f1f1';
-            item.style.cursor = 'pointer';
-            item.textContent = arr[i];
-            (function(text){ item.addEventListener('click', function(){ queryInput.value = text; suggestionBox.style.display = 'none'; suggestionBox.innerHTML = ''; document.getElementById('btn_admin_search').click(); }); })(arr[i]);
-            suggestionBox.appendChild(item);
-          }
-          suggestionBox.style.display = 'block';
-        }
-
-        function updateSuggestionsForQuery(q){
-          var level = document.getElementById('search_admin_level').value;
-          var key = keyForLevel(level);
-          console.log('[admin-autocomplete] updateSuggestionsForQuery:', key, q);
-          suggestionBox.innerHTML = '';
-          suggestionBox.style.display = 'block';
-          // show loading hint
-          var loading = document.createElement('div'); loading.style.padding='6px'; loading.style.color='#666'; loading.textContent = 'Loading suggestions...'; suggestionBox.appendChild(loading);
-
-          var promiseNames;
-          if (adminLayers[key]) {
-            promiseNames = getNamesFromLayer(key);
-          } else {
-            // prefer to load layer (gives better chance to access names, and will surface debug if fails)
-            promiseNames = loadAdminGeojson(key, urlForKey(key), level).then(function(){
-              return getNamesFromLayer(key);
-            }).catch(function(err){
-              console.warn('[admin-autocomplete] loadAdminGeojson failed:', err);
-              // as fallback try fetching raw geojson
-              return fetchNamesFromGeojson(urlForKey(key));
-            });
-          }
-
-          promiseNames.then(function(list){
-            // remove loading
-            suggestionBox.innerHTML = '';
-            if (!list || list.length === 0) {
-              suggestionBox.style.display = 'none';
-              return;
-            }
-            if (!q) { showSuggestions(list.slice(0,10)); return; }
-            var mq = q.toLowerCase();
-            var filtered = list.filter(function(s){ return s.toLowerCase().indexOf(mq) !== -1; });
-            showSuggestions(filtered);
-          }).catch(function(err){
-            console.warn('[admin-autocomplete] promiseNames failed', err);
-            suggestionBox.innerHTML = '';
-            suggestionBox.style.display = 'none';
-          });
-        }
-
-        var debouncedUpdate = debounce(function(){ updateSuggestionsForQuery(queryInput.value.trim()); }, 250);(function(){ updateSuggestionsForQuery(queryInput.value.trim()); }, 250);
-        queryInput.addEventListener('input', debouncedUpdate);
-        queryInput.addEventListener('focus', function(){ debouncedUpdate(); });
-        queryInput.addEventListener('blur', function(){ setTimeout(function(){ suggestionBox.style.display = 'none'; }, 200); });
-
-        var highlightLayer = null;
-        function clearHighlight() { if (highlightLayer) { try{ map.removeLayer(highlightLayer); }catch(e){} highlightLayer = null; } }
-
-        function searchInLayer(key, q){
-          return new Promise(function(resolve, reject){
-            var layer = adminLayers[key];
-            if (!layer) return reject(new Error('Layer not loaded'));
-            var matches = [];
-            layer.eachLayer(function(l){ var feat = l.feature; var props = feat && feat.properties ? feat.properties : {}; var name = matchName(props); if(!name) return; if(name.toLowerCase().indexOf(q.toLowerCase()) !== -1){ matches.push({ name:name, layer:l, feature:feat }); } });
-            resolve(matches);
-          });
-        }
-
-        function hideAllAdminLayers(){
-          Object.keys(adminLayers).forEach(function(k){
-            var layer = adminLayers[k];
-            try{
-              if (!layer) return;
-              // prefer to dim via setStyle if available
-              if (typeof layer.setStyle === 'function') {
-                layer.setStyle({ color: 'rgba(0,0,0,0)', weight: 0, opacity: 0, fillOpacity: 0 });
-              } else {
-                if (map.hasLayer && map.hasLayer(layer)) map.removeLayer(layer);
-              }
-            }catch(e){ console.warn('hideAllAdminLayers err', e); }
-          });
-        }
-        function restoreAdminLayers(){
-          Object.keys(adminLayers).forEach(function(k){
-            var layer = adminLayers[k];
-            var lvl = adminLayerLevels[k] || null;
-            try{
-              if (!layer) return;
-              if (typeof layer.setStyle === 'function' && lvl) {
-                var s = styleFor(lvl);
-                // setStyle expects color/weight/opacity/fillOpacity
-                layer.setStyle({ color: s.color || '#000', weight: s.weight || 1, opacity: s.opacity || 1, fillOpacity: s.fill ? (s.fillOpacity||0.2) : 0 });
-                // ensure layer is added to map
-                if (map.hasLayer && !map.hasLayer(layer)) map.addLayer(layer);
-              } else {
-                if (map.hasLayer && !map.hasLayer(layer)) map.addLayer(layer);
-              }
-            }catch(e){ console.warn('restoreAdminLayers err', e); }
-          });
-        }
-
-        function showResultsList(matches){
-          var container = document.getElementById('admin_search_results');
-          container.innerHTML = '';
-          if(!matches || matches.length===0){ container.innerHTML = '<div class="small">Tidak ditemukan.</div>'; return; }
-
-          // When search results are shown, hide all full admin layers and display only the matched feature(s).
-          hideAllAdminLayers();
-          // remove previous highlightLayer if any
-          clearHighlight();
-
-          // Create a FeatureCollection with all matched features
-          var fc = { type: 'FeatureCollection', features: matches.map(function(m){ return m.feature; }) };
-          highlightLayer = L.geoJSON(fc, {
-            style: function(){ return { color:'#ff7800', weight:4, fill:false }; }
-          }).addTo(map);
-
-          // zoom to bounds of matched features
-          try {
-            var bounds = highlightLayer.getBounds();
-            if (bounds && bounds.isValid()) map.fitBounds(bounds, { maxZoom: 13 });
-          } catch(e){ console.warn(e); }
-
-          // list results with option to focus a single feature (still only matched features are visible)
-          matches.forEach(function(m, idx){
-            var row = document.createElement('div');
-            row.style.padding='6px'; row.style.borderBottom='1px solid #eee'; row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center';
-            row.innerHTML = '<div style="flex:1"><b>' + (idx+1) + '</b> ' + m.name + '</div>';
-            var btn = document.createElement('button'); btn.className='btn tertiary'; btn.textContent='Zoom';
-            btn.addEventListener('click', function(){
-              try{
-                // zoom to this matched feature only
-                var singleFc = { type:'FeatureCollection', features:[ m.feature ] };
-                // replace highlightLayer with single feature
-                if (highlightLayer) { try{ map.removeLayer(highlightLayer); }catch(e){} highlightLayer = null; }
-                highlightLayer = L.geoJSON(singleFc, { style:function(){ return { color:'#ff7800', weight:4, fill:false }; } }).addTo(map);
-                var b = L.geoJSON(m.feature).getBounds(); if (b && b.isValid()) map.fitBounds(b, { maxZoom:13 });
-              } catch(e){ console.warn(e); }
-            });
-            row.appendChild(btn);
-            container.appendChild(row);
-          });
-
-          // add a restore button to allow returning to full layer view
-          var restoreBtn = document.createElement('button'); restoreBtn.className='btn secondary'; restoreBtn.style.marginTop='8px'; restoreBtn.textContent = 'Restore all administrative layers';
-          restoreBtn.addEventListener('click', function(){ clearHighlight(); restoreAdminLayers(); container.innerHTML = ''; document.getElementById('search_admin_query').value = ''; });
-          container.appendChild(restoreBtn);
-        }
-
-        // Search handler
-        document.getElementById('btn_admin_search').addEventListener('click', function(){ var level = document.getElementById('search_admin_level').value; var q = document.getElementById('search_admin_query').value.trim(); if(!q){ alert('Masukkan nama wilayah yang ingin dicari.'); return; } var key = keyForLevel(level); if(!adminLayers[key]){ loadAdminGeojson(key, urlForKey(key), level).then(function(){ return searchInLayer(key, q);} ).then(function(matches){ showResultsList(matches); }).catch(function(err){ alert('Gagal memuat layer administratif untuk pencarian: ' + (err && err.message ? err.message : err)); }); } else { searchInLayer(key, q).then(function(matches){ showResultsList(matches); }); } });
-
-        document.getElementById('btn_admin_clear').addEventListener('click', function(){ document.getElementById('search_admin_query').value=''; document.getElementById('admin_search_results').innerHTML=''; clearHighlight(); });
-
-      })();
-    </script>
-  </body>
-</html>
+              styl
