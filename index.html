@@ -6,63 +6,158 @@
     <title>WebGIS Prototype — Collect Points & Export CSV</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-      html, body { height:100%; margin:0; padding:0; }
-      #map { height:100%; }
-      body { font-family: Arial, Helvetica, sans-serif; }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+      }
 
       /* Left sidebar */
       #sidebar {
-        position: absolute; top:8px; left:8px; z-index:1000;
-        background: rgba(255,255,255,0.98); padding:10px; border-radius:6px;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.25);
-        width:320px; max-height:90vh; overflow:auto;
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.98);
+        padding: 10px;
+        border-radius: 6px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+        width: 320px;
+        max-height: 90vh;
+        overflow: auto;
       }
 
       /* Right sidebar */
       #sidebarRight {
-        position: absolute; top:8px; right:8px; z-index:1000;
-        background: rgba(255,255,255,0.98); padding:10px; border-radius:6px;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.25);
-        width:320px; max-height:90vh; overflow:auto;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.98);
+        padding: 10px;
+        border-radius: 6px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+        width: 320px;
+        max-height: 90vh;
+        overflow: auto;
       }
 
-      @media (max-width:700px) {
-        #sidebar, #sidebarRight {
-          position: fixed; left:0; right:0; bottom:0; top:auto;
-          width:100%; max-height:45vh; border-radius:12px 12px 0 0; padding:10px 12px;
+      @media (max-width: 700px) {
+        #sidebar,
+        #sidebarRight {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          top: auto;
+          width: 100%;
+          max-height: 45vh;
+          border-radius: 12px 12px 0 0;
+          padding: 10px 12px;
         }
       }
 
-      .btn { display:inline-block; padding:8px 12px; margin:6px 4px; border-radius:6px; border:1px solid #2c7be5; background:#2c7be5; color:#fff; cursor:pointer; font-size:14px; }
-      .btn.secondary { background:#fff; color:#2c7be5; }
-      .btn.tertiary { background:#f5f5f5; color:#333; border:1px solid #ddd; }
-      .smallBtn { padding:4px 6px; font-size:12px; }
-
-      label { display:block; margin-top:8px; font-weight:600; }
-      input[type="text"], select, textarea { width:100%; padding:8px; box-sizing:border-box; margin-top:6px; border:1px solid #ccc; border-radius:4px; }
-      textarea { resize:vertical; }
-
-      table { width:100%; border-collapse:collapse; margin-top:8px; }
-      table th, table td { border:1px solid #ddd; padding:6px; font-size:13px; }
-      .small { font-size:13px; color:#555; }
-
-      @media (max-width:700px) {
-        /* hide lat/lon columns on mobile (indexes adjusted below) */
-        table th:nth-child(5), table td:nth-child(5), table th:nth-child(6), table td:nth-child(6) { display:none; }
-        .btn { font-size:13px; padding:8px 10px; }
+      .btn {
+        display: inline-block;
+        padding: 8px 12px;
+        margin: 6px 4px;
+        border-radius: 6px;
+        border: 1px solid #2c7be5;
+        background: #2c7be5;
+        color: #fff;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn.secondary {
+        background: #fff;
+        color: #2c7be5;
+      }
+      .btn.tertiary {
+        background: #f5f5f5;
+        color: #333;
+        border: 1px solid #ddd;
+      }
+      .smallBtn {
+        padding: 4px 6px;
+        font-size: 12px;
       }
 
-      .leaflet-control-layers { z-index:1200; }
+      label {
+        display: block;
+        margin-top: 8px;
+        font-weight: 600;
+      }
+      input[type="text"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        margin-top: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      textarea {
+        resize: vertical;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      table th,
+      table td {
+        border: 1px solid #ddd;
+        padding: 6px;
+        font-size: 13px;
+      }
+      .small {
+        font-size: 13px;
+        color: #555;
+      }
+
+      @media (max-width: 700px) {
+        /* hide lat/lon columns on mobile (indexes adjusted below) */
+        table th:nth-child(5),
+        table td:nth-child(5),
+        table th:nth-child(6),
+        table td:nth-child(6) {
+          display: none;
+        }
+        .btn {
+          font-size: 13px;
+          padding: 8px 10px;
+        }
+      }
+
+      .leaflet-control-layers {
+        z-index: 1200;
+      }
 
       /* admin label style */
-      .admin-label { background: rgba(255,255,255,0.85); padding: 2px 4px; border-radius:4px; font-size:11px; color:#111; box-shadow:0 0 1px rgba(0,0,0,0.15); }
+      .admin-label {
+        background: rgba(255, 255, 255, 0.85);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: #111;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+      }
     </style>
   </head>
   <body>
     <div id="map"></div>
 
     <div id="sidebar">
-      <h3 style="margin:6px 0">Collector — Preference Mapping (MaxEnt)</h3>
+      <h3 style="margin: 6px 0">Collector — Preference Mapping (MaxEnt)</h3>
       <div class="small">Klik peta untuk menambahkan titik. Isi atribut di form, lalu tekan <b>Save Point</b>. Minimal <b>10 titik</b> per responden direkomendasikan.</div>
 
       <label>Respondent ID</label>
@@ -95,7 +190,7 @@
       <label>Accuracy (m) — optional</label>
       <input type="text" id="accuracy_m" placeholder="e.g. 10" />
 
-      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center;">
+      <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center">
         <button id="savePointBtn" class="btn">Save Point</button>
         <button id="clearFormBtn" class="btn secondary">Clear Form</button>
         <button id="centerBtn" class="btn tertiary">Center Map</button>
@@ -106,7 +201,7 @@
       <div class="small"><b>Points collected for current respondent:</b></div>
       <div id="pointsCount">0 points</div>
 
-      <table id="pointsTable" style="display:none">
+      <table id="pointsTable" style="display: none">
         <thead>
           <tr>
             <th>#</th>
@@ -121,7 +216,7 @@
         <tbody></tbody>
       </table>
 
-      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+      <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap">
         <button id="exportCsv" class="btn">Export CSV</button>
         <button id="exportGeojson" class="btn">Export GeoJSON</button>
         <button id="clearAll" class="btn secondary">Clear All Points</button>
@@ -132,14 +227,14 @@
     </div>
 
     <div id="sidebarRight">
-      <h3 style="margin:6px 0">Tools</h3>
+      <h3 style="margin: 6px 0">Tools</h3>
       <div class="small">Tool cepat untuk pengguna.</div>
 
-      <div style="margin-top:10px; display:flex; flex-direction:column; gap:12px; align-items:center;">
-        <button id="getLocationBtn" class="btn" style="width:80%; text-align:center">Get my location</button>
-        <div style="display:flex; gap:8px; justify-content:center; width:100%;">
-          <button id="zoomInBtn" class="btn tertiary" style="width:40%; text-align:center">Zoom In</button>
-          <button id="zoomOutBtn" class="btn tertiary" style="width:40%; text-align:center">Zoom Out</button>
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px; align-items: center">
+        <button id="getLocationBtn" class="btn" style="width: 80%; text-align: center">Get my location</button>
+        <div style="display: flex; gap: 8px; justify-content: center; width: 100%">
+          <button id="zoomInBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom In</button>
+          <button id="zoomOutBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom Out</button>
         </div>
       </div>
 
@@ -150,134 +245,197 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       // --- Map init ---
-      var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' });
-      var map = L.map('map', { center:[-7.8, 110.37], zoom:12, layers:[osm] });
+      var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" });
+      var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm] });
       L.control.scale().addTo(map);
-      var baseMaps = { 'OSM Standard': osm };
-      L.control.layers(baseMaps, null, { collapsed:false }).addTo(map);
-      map.whenReady(function(){
+      var baseMaps = { "OSM Standard": osm };
+      L.control.layers(baseMaps, null, { collapsed: false }).addTo(map);
+      map.whenReady(function () {
         // Administrative layers are intentionally hidden from direct sidebar controls.
         // They remain part of the system and can be loaded programmatically.
         // New feature: Search by Administrative (uses those layers)
-        var searchContainer = document.createElement('div');
-        searchContainer.style.marginTop = '12px';
-        searchContainer.innerHTML = '<b>Search by Administrative</b><br/>' +
+        var searchContainer = document.createElement("div");
+        searchContainer.style.marginTop = "12px";
+        searchContainer.innerHTML =
+          "<b>Search by Administrative</b><br/>" +
           '<label style="display:block;margin-top:6px; font-weight:600;">Level</label>' +
           '<select id="search_admin_level" style="width:100%; padding:6px; box-sizing:border-box">' +
-            '<option value="prov">Provinsi</option>' +
-            '<option value="kab">Kabupaten/Kota</option>' +
-            '<option value="kec">Kecamatan</option>' +
-            '<option value="desa">Desa</option>' +
-          '</select>' +
+          '<option value="prov">Provinsi</option>' +
+          '<option value="kab">Kabupaten/Kota</option>' +
+          '<option value="kec">Kecamatan</option>' +
+          '<option value="desa">Desa</option>' +
+          "</select>" +
           '<label style="display:block;margin-top:8px; font-weight:600;">Nama wilayah</label>' +
           '<div style="position:relative">' +
-            '<input id="search_admin_query" type="text" autocomplete="off" placeholder="Masukkan nama (mis. Jawa Tengah)" style="width:100%; padding:6px; box-sizing:border-box" />' +
-            '<div id="admin_suggestions" style="position:absolute; left:0; right:0; top:40px; background:#fff; border:1px solid #ddd; max-height:180px; overflow:auto; display:none; z-index:2000;"></div>' +
-          '</div>' +
+          '<input id="search_admin_query" type="text" autocomplete="off" placeholder="Masukkan nama (mis. Jawa Tengah)" style="width:100%; padding:6px; box-sizing:border-box" />' +
+          '<div id="admin_suggestions" style="position:absolute; left:0; right:0; top:40px; background:#fff; border:1px solid #ddd; max-height:180px; overflow:auto; display:none; z-index:2000;"></div>' +
+          "</div>" +
           '<div style="display:flex; gap:8px; margin-top:8px;">' +
-            '<button id="btn_admin_search" class="btn">Search</button>' +
-            '<button id="btn_admin_clear" class="btn secondary">Clear</button>' +
-          '</div>' +
+          '<button id="btn_admin_search" class="btn">Search</button>' +
+          '<button id="btn_admin_clear" class="btn secondary">Clear</button>' +
+          "</div>" +
           '<div id="admin_search_results" style="margin-top:8px; max-height:200px; overflow:auto; font-size:13px"></div>';
-        document.getElementById('sidebarRight').appendChild(searchContainer);
+        document.getElementById("sidebarRight").appendChild(searchContainer);
 
         // Autocomplete helpers
-        var suggestionBox = document.getElementById('admin_suggestions');
-        var queryInput = document.getElementById('search_admin_query');
+        var suggestionBox = document.getElementById("admin_suggestions");
+        var queryInput = document.getElementById("search_admin_query");
 
-        function debounce(fn, wait){ var t; return function(){ var args=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(null, args); }, wait); }; }
+        function debounce(fn, wait) {
+          var t;
+          return function () {
+            var args = arguments;
+            clearTimeout(t);
+            t = setTimeout(function () {
+              fn.apply(null, args);
+            }, wait);
+          };
+        }
 
-        function getNamesFromLayer(key){
-          return new Promise(function(resolve, reject){
+        function getNamesFromLayer(key) {
+          return new Promise(function (resolve, reject) {
             var layer = adminLayers[key];
-            if (!layer) return reject(new Error('Layer not loaded'));
-            var set = {}; var list = [];
-            layer.eachLayer(function(l){
-              var feat = l.feature; var props = feat && feat.properties ? feat.properties : {};
+            if (!layer) return reject(new Error("Layer not loaded"));
+            var set = {};
+            var list = [];
+            layer.eachLayer(function (l) {
+              var feat = l.feature;
+              var props = feat && feat.properties ? feat.properties : {};
               var name = matchName(props);
               if (!name) return;
               var n = String(name).trim();
-              if (n && !set[n.toLowerCase()]){ set[n.toLowerCase()] = true; list.push(n); }
+              if (n && !set[n.toLowerCase()]) {
+                set[n.toLowerCase()] = true;
+                list.push(n);
+              }
             });
-            resolve(list.sort(function(a,b){ return a.localeCompare(b); }));
+            resolve(
+              list.sort(function (a, b) {
+                return a.localeCompare(b);
+              })
+            );
           });
         }
 
-        function showSuggestions(arr){
-          if (!arr || arr.length === 0){ suggestionBox.style.display = 'none'; suggestionBox.innerHTML = ''; return; }
-          suggestionBox.innerHTML = '';
+        function showSuggestions(arr) {
+          if (!arr || arr.length === 0) {
+            suggestionBox.style.display = "none";
+            suggestionBox.innerHTML = "";
+            return;
+          }
+          suggestionBox.innerHTML = "";
           var max = Math.min(arr.length, 10);
-          for (var i=0;i<max;i++){
-            var item = document.createElement('div');
-            item.style.padding = '6px 8px';
-            item.style.borderBottom = '1px solid #f1f1f1';
-            item.style.cursor = 'pointer';
+          for (var i = 0; i < max; i++) {
+            var item = document.createElement("div");
+            item.style.padding = "6px 8px";
+            item.style.borderBottom = "1px solid #f1f1f1";
+            item.style.cursor = "pointer";
             item.textContent = arr[i];
-            (function(text){ item.addEventListener('click', function(){ queryInput.value = text; suggestionBox.style.display = 'none'; suggestionBox.innerHTML = ''; // trigger search immediately
-                  document.getElementById('btn_admin_search').click(); }); })(arr[i]);
+            (function (text) {
+              item.addEventListener("click", function () {
+                queryInput.value = text;
+                suggestionBox.style.display = "none";
+                suggestionBox.innerHTML = ""; // trigger search immediately
+                document.getElementById("btn_admin_search").click();
+              });
+            })(arr[i]);
             suggestionBox.appendChild(item);
           }
-          suggestionBox.style.display = 'block';
+          suggestionBox.style.display = "block";
         }
 
-        function updateSuggestionsForQuery(q){
-          var level = document.getElementById('search_admin_level').value;
+        function updateSuggestionsForQuery(q) {
+          var level = document.getElementById("search_admin_level").value;
           var key = keyForLevel(level);
           // ensure layer loaded; if not, try to load silently then get names
-          var ensure = adminLayers[key] ? Promise.resolve() : loadAdminGeojson(key, urlForKey(key), level).catch(function(){ return Promise.resolve(); });
-          ensure.then(function(){
-            if (!adminLayers[key]) { showSuggestions([]); return; }
-            getNamesFromLayer(key).then(function(list){
-              if (!q) { showSuggestions(list.slice(0,10)); return; }
-              var mq = q.toLowerCase();
-              var filtered = list.filter(function(s){ return s.toLowerCase().indexOf(mq) !== -1; });
-              showSuggestions(filtered);
-            }).catch(function(){ showSuggestions([]); });
+          var ensure = adminLayers[key]
+            ? Promise.resolve()
+            : loadAdminGeojson(key, urlForKey(key), level).catch(function () {
+                return Promise.resolve();
+              });
+          ensure.then(function () {
+            if (!adminLayers[key]) {
+              showSuggestions([]);
+              return;
+            }
+            getNamesFromLayer(key)
+              .then(function (list) {
+                if (!q) {
+                  showSuggestions(list.slice(0, 10));
+                  return;
+                }
+                var mq = q.toLowerCase();
+                var filtered = list.filter(function (s) {
+                  return s.toLowerCase().indexOf(mq) !== -1;
+                });
+                showSuggestions(filtered);
+              })
+              .catch(function () {
+                showSuggestions([]);
+              });
           });
         }
 
-        var debouncedUpdate = debounce(function(){ updateSuggestionsForQuery(queryInput.value.trim()); }, 250);
-        queryInput.addEventListener('input', debouncedUpdate);
-        queryInput.addEventListener('focus', function(){ debouncedUpdate(); });
+        var debouncedUpdate = debounce(function () {
+          updateSuggestionsForQuery(queryInput.value.trim());
+        }, 250);
+        queryInput.addEventListener("input", debouncedUpdate);
+        queryInput.addEventListener("focus", function () {
+          debouncedUpdate();
+        });
         // hide suggestions on blur after a short timeout to allow click
-        queryInput.addEventListener('blur', function(){ setTimeout(function(){ suggestionBox.style.display = 'none'; }, 200); });
+        queryInput.addEventListener("blur", function () {
+          setTimeout(function () {
+            suggestionBox.style.display = "none";
+          }, 200);
+        });
 
         var highlightLayer = null;
 
         function clearHighlight() {
-          if (highlightLayer) { try { map.removeLayer(highlightLayer); } catch(e){} highlightLayer = null; }
+          if (highlightLayer) {
+            try {
+              map.removeLayer(highlightLayer);
+            } catch (e) {}
+            highlightLayer = null;
+          }
         }
 
         function keyForLevel(level) {
-          switch(level) {
-            case 'prov': return 'WADMPR';
-            case 'kab': return 'WADMKK';
-            case 'kec': return 'WADMKC';
-            case 'desa': return 'WADMKD';
-            default: return 'WADMPR';
+          switch (level) {
+            case "prov":
+              return "WADMPR";
+            case "kab":
+              return "WADMKK";
+            case "kec":
+              return "WADMKC";
+            case "desa":
+              return "WADMKD";
+            default:
+              return "WADMPR";
           }
         }
 
         function urlForKey(key) {
           return {
-            WADMPR: 'data/WADMPR.geojson',
-            WADMKK: 'data/WADMKK.geojson',
-            WADMKC: 'data/WADMKC.geojson',
-            WADMKD: 'data/WADMKD.geojson'
+            WADMPR: "data/WADMPR.geojson",
+            WADMKK: "data/WADMKK.geojson",
+            WADMKC: "data/WADMKC.geojson",
+            WADMKD: "data/WADMKD.geojson",
           }[key];
         }
 
         function matchName(props) {
           // return the most likely name field
-          return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || '').toString();
+          return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "").toString();
         }
 
         function searchInLayer(key, q) {
-          return new Promise(function(resolve, reject){
+          return new Promise(function (resolve, reject) {
             var layer = adminLayers[key];
-            if (!layer) return reject(new Error('Layer not loaded'));
+            if (!layer) return reject(new Error("Layer not loaded"));
             var matches = [];
-            layer.eachLayer(function(l){
+            layer.eachLayer(function (l) {
               var feat = l.feature;
               var props = feat && feat.properties ? feat.properties : {};
               var name = matchName(props);
@@ -291,30 +449,42 @@
         }
 
         function showResultsList(matches) {
-          var container = document.getElementById('admin_search_results');
-          container.innerHTML = '';
-          if (!matches || matches.length === 0) { container.innerHTML = '<div class="small">Tidak ditemukan.</div>'; return; }
-          matches.forEach(function(m, idx){
-            var row = document.createElement('div');
-            row.style.padding = '6px';
-            row.style.borderBottom = '1px solid #eee';
-            row.style.display = 'flex';
-            row.style.justifyContent = 'space-between';
-            row.style.alignItems = 'center';
-            row.innerHTML = '<div style="flex:1"><b>' + (idx+1) + '</b> ' + m.name + '</div>';
-            var btn = document.createElement('button');
-            btn.className = 'btn tertiary';
-            btn.textContent = 'Zoom';
-            btn.addEventListener('click', function(){
+          var container = document.getElementById("admin_search_results");
+          container.innerHTML = "";
+          if (!matches || matches.length === 0) {
+            container.innerHTML = '<div class="small">Tidak ditemukan.</div>';
+            return;
+          }
+          matches.forEach(function (m, idx) {
+            var row = document.createElement("div");
+            row.style.padding = "6px";
+            row.style.borderBottom = "1px solid #eee";
+            row.style.display = "flex";
+            row.style.justifyContent = "space-between";
+            row.style.alignItems = "center";
+            row.innerHTML = '<div style="flex:1"><b>' + (idx + 1) + "</b> " + m.name + "</div>";
+            var btn = document.createElement("button");
+            btn.className = "btn tertiary";
+            btn.textContent = "Zoom";
+            btn.addEventListener("click", function () {
               clearHighlight();
               try {
-                highlightLayer = L.geoJSON(m.feature, { style: function(){ return { color:'#ff7800', weight:4, fill:false }; } }).addTo(map);
+                highlightLayer = L.geoJSON(m.feature, {
+                  style: function () {
+                    return { color: "#ff7800", weight: 4, fill: false };
+                  },
+                }).addTo(map);
                 if (m.layer && m.layer.getBounds) {
                   map.fitBounds(m.layer.getBounds(), { maxZoom: 13 });
                 } else if (m.feature && m.feature.geometry) {
-                  try { var b = L.geoJSON(m.feature).getBounds(); map.fitBounds(b, { maxZoom:13 }); } catch(e){}
+                  try {
+                    var b = L.geoJSON(m.feature).getBounds();
+                    map.fitBounds(b, { maxZoom: 13 });
+                  } catch (e) {}
                 }
-              } catch(e){ console.warn(e); }
+              } catch (e) {
+                console.warn(e);
+              }
             });
             row.appendChild(btn);
             container.appendChild(row);
@@ -322,33 +492,39 @@
         }
 
         // Search button handler
-        document.getElementById('btn_admin_search').addEventListener('click', function(){
-          var level = document.getElementById('search_admin_level').value;
-          var q = document.getElementById('search_admin_query').value.trim();
-          if (!q) { alert('Masukkan nama wilayah yang ingin dicari.'); return; }
+        document.getElementById("btn_admin_search").addEventListener("click", function () {
+          var level = document.getElementById("search_admin_level").value;
+          var q = document.getElementById("search_admin_query").value.trim();
+          if (!q) {
+            alert("Masukkan nama wilayah yang ingin dicari.");
+            return;
+          }
           var key = keyForLevel(level);
           // ensure layer loaded (silent)
           if (!adminLayers[key]) {
-            loadAdminGeojson(key, urlForKey(key), level).then(function(){
-              return searchInLayer(key, q);
-            }).then(function(matches){
-              showResultsList(matches);
-            }).catch(function(err){
-              alert('Gagal memuat layer administratif untuk pencarian: ' + (err && err.message ? err.message : err));
-            });
+            loadAdminGeojson(key, urlForKey(key), level)
+              .then(function () {
+                return searchInLayer(key, q);
+              })
+              .then(function (matches) {
+                showResultsList(matches);
+              })
+              .catch(function (err) {
+                alert("Gagal memuat layer administratif untuk pencarian: " + (err && err.message ? err.message : err));
+              });
           } else {
-            searchInLayer(key, q).then(function(matches){ showResultsList(matches); });
+            searchInLayer(key, q).then(function (matches) {
+              showResultsList(matches);
+            });
           }
         });
 
-        document.getElementById('btn_admin_clear').addEventListener('click', function(){
-          document.getElementById('search_admin_query').value = '';
-          document.getElementById('admin_search_results').innerHTML = '';
+        document.getElementById("btn_admin_clear").addEventListener("click", function () {
+          document.getElementById("search_admin_query").value = "";
+          document.getElementById("admin_search_results").innerHTML = "";
           clearHighlight();
         });
-
       })();
-
     </script>
   </body>
 </html>
