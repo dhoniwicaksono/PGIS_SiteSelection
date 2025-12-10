@@ -144,6 +144,11 @@
     </div>
 
     <div id="sidebarRight">
+      <div id="topoLegend" class="topo-legend" style="margin-top:8px">
+        <strong>Legend — Kantor Pemerintahan (Toponimi)</strong>
+        <div id="legendItems" style="margin-top:6px"></div>
+      </div>
+      <hr />
       <h3 style="margin:6px 0">Tools</h3>
       <div class="small">Tool cepat untuk pengguna.</div>
 
@@ -159,9 +164,7 @@
       <div class="small">Gunakan <b>Get my location</b> untuk memusatkan peta pada posisi perangkat Anda dan menandainya.</div>
 
       <hr />
-      <div id="topoLegend" class="topo-legend" style="margin-top:8px">
-        <strong>Legend — Kantor Pemerintahan (Toponimi)</strong>
-        <div id="legendItems" style="margin-top:6px"></div>
+      
       </div>
     </div>
 
@@ -450,7 +453,33 @@
           map.setView([lat, lon], 16);
           var m = L.circleMarker([lat, lon], { radius:8, color:'#337ab7' }).addTo(map);
           m.bindPopup('<b>Your location</b>').openPopup();
-          setTimeout(function(){ if (map && m) map.removeLayer(m); }, 10000);
+          setTimeout(function(){
+        // Build Search UI and insert AFTER zoom controls, not before legend
+        var sidebarRightEl = document.getElementById('sidebarRight');
+        var zoomOutBtnEl = document.getElementById('zoomOutBtn');
+        if (sidebarRightEl && zoomOutBtnEl) {
+          var searchWrap = document.createElement('div');
+          searchWrap.style.marginTop = '12px';
+          searchWrap.innerHTML = '<label style="font-weight:700;margin-bottom:6px;">Search by Administrative</label>' +
+                                 '<div style="display:flex;gap:8px;margin-bottom:6px">' +
+                                 '<select id="adminLevelSelect" style="flex:0 0 48%;padding:6px;border-radius:4px;border:1px solid #ccc">' +
+                                   '<option value="prov">Provinsi</option>' +
+                                   '<option value="kab">Kabupaten/Kota</option>' +
+                                   '<option value="kec">Kecamatan</option>' +
+                                   '<option value="desa">Desa/Kelurahan</option>' +
+                                 '</select>' +
+                                 '<input id="adminSearchInput" placeholder="ketik nama..." style="flex:1;padding:6px;border-radius:4px;border:1px solid #ccc" />' +
+                                 '</div>' +
+                                 '<div id="admin_suggestions" style="max-height:160px;overflow:auto;border:1px solid #eee;padding:6px;border-radius:6px;background:#fff"></div>';
+
+          // Insert AFTER zoomOutBtn parent container
+          var target = zoomOutBtnEl.parentElement.parentElement; // zoom control container
+          sidebarRightEl.insertBefore(searchWrap, target.nextSibling);
+        }
+
+        var levelSelect = document.getElementById('adminLevelSelect');
+        var searchInput = document.getElementById('adminSearchInput');
+        var suggestions = document.getElementById('admin_suggestions'); if (map && m) map.removeLayer(m); }, 10000);
           getLocationBtn.disabled = false; getLocationBtn.textContent = 'Get my location';
         }, function(err){ alert('Gagal mendapatkan lokasi: ' + (err.message || 'permission denied')); getLocationBtn.disabled = false; getLocationBtn.textContent = 'Get my location'; }, { enableHighAccuracy:true, timeout:10000 });
       });
