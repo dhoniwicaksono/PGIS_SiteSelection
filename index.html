@@ -62,6 +62,12 @@
 
       /* suggestion box */
       #admin_suggestions div:hover { background:#f5f8ff; }
+
+      /* minimal legend for toponimi */
+      .topo-legend { font-size:13px; line-height:1.5; }
+      .topo-legend .item { display:flex; align-items:center; gap:8px; margin:6px 0; }
+      .topo-swatch { width:18px; height:18px; border-radius:50%; border:1px solid rgba(0,0,0,0.25); display:inline-block; }
+
     </style>
   </head>
   <body>
@@ -151,6 +157,12 @@
 
       <hr />
       <div class="small">Gunakan <b>Get my location</b> untuk memusatkan peta pada posisi perangkat Anda dan menandainya.</div>
+
+      <hr />
+      <div id="topoLegend" class="topo-legend" style="margin-top:8px">
+        <strong>Legend — Kantor Pemerintahan (Toponimi)</strong>
+        <div id="legendItems" style="margin-top:6px"></div>
+      </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -160,7 +172,10 @@
       var map = L.map('map', { center:[-7.8, 110.37], zoom:12, layers:[osm] });
       L.control.scale().addTo(map);
       var baseMaps = { 'OSM Standard': osm };
-      L.control.layers(baseMaps, null, { collapsed:false }).addTo(map);
+
+      // We'll add overlay control later after toponimi layer is created
+      var overlayMaps = {};
+      var layerControl = L.control.layers(baseMaps, overlayMaps, { collapsed:false }).addTo(map);
 
       // --- State ---
       var allPoints = [];
@@ -447,8 +462,7 @@
 
       // --- Administrative layers (external data/) ---
       var adminLayers = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null };
-      // track level mapping so we can restore styles later
-      var adminLayerLevels = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null }; 
+      var adminLayerLevels = { WADMPR:null, WADMKK:null, WADMKC:null, WADMKD:null };
 
       function styleFor(level) {
         switch(level) {
@@ -460,275 +474,180 @@
         }
       }
 
-      async function loadAdminGeojson(key, url, level) {
-        // try a few candidate URLs
-        var candidates = [url, url.toLowerCase(), url.replace(/\.geojson$/i,'.json'), url.replace(/^data\//,'')];
-        // absolute based on current location
-        try { var base = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, ''); candidates.push(base + '/' + url); } catch(e){}
-        candidates = candidates.filter(function(v,i){ return candidates.indexOf(v) === i; });
+      // --- Toponimi kantor pemerintahan: load & simbolisasi berdasarkan properti 'kategori' ---
+      var toponimiLayer = null;
 
-        if (adminLayers[key]) { try{ map.removeLayer(adminLayers[key]); }catch(e){} adminLayers[key]=null; adminLayerLevels[key]=null; }
+      // Mapping: kategori (as present in GeoJSON) -> style (minimal, hierarchical)
+      var kategoriOrder = [
+        'Kantor Gubernur',
+        'Kantor Bupati',
+        'Kantor Wali Kota',
+        'Kantor Kalurahan (setingkat desa)',
+        'Kantor Kemantren (setingkat desa)',
+        'Kantor Kelurahan (di bawah administrasi kemantren)'
+      ];
 
-        var errors = [];
-        for (var i=0;i<candidates.length;i++){
-          var u = candidates[i];
-          try {
-            var resp = await fetch(u, {cache:'no-store'});
-            if (!resp.ok) { errors.push({url:u, status:resp.status}); continue; }
-            var gj = await resp.json();
-            var layer = L.geoJSON(gj, {
-              style: styleFor(level),
-              onEachFeature: function(feature, lyr){
-                var props = feature && feature.properties ? feature.properties : {};
-                var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || '';
-                var cls = 'admin-label admin-label-' + level;
-                if (name) lyr.bindTooltip(String(name), { permanent:true, direction:'center', className: cls });
-              }
-            }).addTo(map);
-            if (level === 'prov') try{ if (layer.bringToBack) layer.bringToBack(); }catch(e){}
-            if (level === 'desa') try{ if (layer.bringToFront) layer.bringToFront(); }catch(e){}
-            adminLayers[key] = layer;
-            adminLayerLevels[key] = level;
-            // remove any debug entry
-            var dbg = document.getElementById('admin_debug_' + key); if (dbg) dbg.remove();
-            console.log('Loaded', key, 'from', u);
-            return layer;
-          } catch(err) {
-            errors.push({url:u, error: err && err.message ? err.message : String(err)});
-            continue;
-          }
-        }
-        // show debug panel
-        var container = document.getElementById('sidebarRight');
-        var panel = document.createElement('div'); panel.id = 'admin_debug_' + key; panel.style.background='rgba(255,240,240,0.95)'; panel.style.padding='6px'; panel.style.marginTop='8px'; panel.style.border='1px solid #f2a0a0'; panel.style.borderRadius='6px';
-        var html = '<b>Failed to load ' + key + '</b><br/><div style="font-size:12px;margin-top:6px">Attempted URLs:</div><ul>';
-        errors.forEach(function(e){ if (e.status) html += '<li>' + e.url + ' — HTTP ' + e.status + '</li>'; else html += '<li>' + e.url + ' — ' + (e.error||'network error') + '</li>'; });
-        html += '</ul><div style="font-size:12px;margin-top:6px">Pastikan file tersedia di folder <code>/data/</code> dengan nama yang tepat (case-sensitive).</div>';
-        panel.innerHTML = html; container.appendChild(panel);
-        console.error('Failed loading', key, errors);
-        throw new Error('Failed to load ' + key);
+      // Build a simple style palette (monochrome with size hierarchy)
+      function styleForKategori(k) {
+        var idx = kategoriOrder.indexOf(k);
+        if (idx === -1) idx = kategoriOrder.length - 1;
+        var rank = kategoriOrder.length - idx; // higher rank larger symbol
+        var radius = 6 + (rank * 2);
+        var weight = 1 + Math.round(rank/2);
+        var color = (rank >= 5) ? '#1f3559' : (rank >= 3 ? '#2b7fb8' : '#4b5563');
+        return { radius: radius, color: color, weight: weight, fillOpacity:0.85, fillColor: color };
       }
 
-      function keyForLevel(level) { switch(level){ case 'prov': return 'WADMPR'; case 'kab': return 'WADMKK'; case 'kec': return 'WADMKC'; case 'desa': return 'WADMKD'; default: return 'WADMPR'; } }
-      function urlForKey(key){ return { WADMPR:'data/WADMPR.geojson', WADMKK:'data/WADMKK.geojson', WADMKC:'data/WADMKC.geojson', WADMKD:'data/WADMKD.geojson' }[key]; }
-      function matchName(props){ return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || '').toString(); }
+      function pointToTopoMarker(feature, latlng) {
+        var props = feature && feature.properties ? feature.properties : {};
+        var k = props.kategori || props.KATEGORI || props.Kategori || '';
+        var s = styleForKategori(k);
+        var marker = L.circleMarker(latlng, { radius: s.radius, color: s.color, weight: s.weight, fillColor: s.fillColor, fillOpacity: s.fillOpacity });
+        var label = k ? k : (props.nama || props.name || 'Kantor Pemerintahan');
+        marker.bindTooltip(label, { permanent:false, direction:'top', className:'admin-label admin-label-desa' });
+        return marker;
+      }
 
-      // build Search by Administrative UI (hidden layer controls)
+      function loadToponimiGeojson(filenameCandidates) {
+        if (!filenameCandidates || !filenameCandidates.length) return Promise.reject(new Error('No candidates'));
+        var tried = [];
+        function tryNext(i) {
+          if (i >= filenameCandidates.length) return Promise.reject(new Error('All attempts failed: ' + JSON.stringify(tried)));
+          var u = filenameCandidates[i];
+          return fetch(u, { cache:'no-store' }).then(function(resp){
+            if (!resp.ok) { tried.push({ url:u, status:resp.status }); return tryNext(i+1); }
+            return resp.json().then(function(gj){
+              if (toponimiLayer) { try{ map.removeLayer(toponimiLayer); }catch(e){} toponimiLayer = null; }
+              toponimiLayer = L.geoJSON(gj, {
+                pointToLayer: pointToTopoMarker,
+                onEachFeature: function(feature, layer){
+                  var props = feature && feature.properties ? feature.properties : {};
+                  var popup = [];
+                  if (props.nama) popup.push('<b>' + props.nama + '</b>');
+                  if (props.KATEGORI) popup.push('<i>' + props.KATEGORI + '</i>');
+                  if (props.kategori) popup.push('<i>' + props.kategori + '</i>');
+                  var keys = Object.keys(props).filter(function(k){ return ['nama','NAME','KATEGORI','kategori'].indexOf(k) === -1; });
+                  if (keys.length) popup.push('<small>' + keys.map(function(k){ return k + ': ' + props[k]; }).join('<br/>') + '</small>');
+                  if (popup.length) layer.bindPopup(popup.join('<br/>'));
+                }
+              }).addTo(map);
+
+              overlayMaps['Toponimi — Kantor Pemerintahan'] = toponimiLayer;
+              try { layerControl.remove(); } catch(e){};
+              layerControl = L.control.layers(baseMaps, overlayMaps, { collapsed:false }).addTo(map);
+
+              var legendContainer = document.getElementById('legendItems');
+              if (legendContainer) {
+                legendContainer.innerHTML = '';
+                kategoriOrder.forEach(function(k){
+                  var s = styleForKategori(k);
+                  var div = document.createElement('div'); div.className = 'item';
+                  var sw = document.createElement('span'); sw.className='topo-swatch'; sw.style.background = s.fillColor; sw.style.width = (12 + (kategoriOrder.length - kategoriOrder.indexOf(k))*2) + 'px'; sw.style.height = sw.style.width;
+                  div.appendChild(sw);
+                  var lab = document.createElement('div'); lab.textContent = k; div.appendChild(lab);
+                  legendContainer.appendChild(div);
+                });
+              }
+
+              try {
+                var b = toponimiLayer.getBounds(); if (b && b.isValid()) map.fitBounds(b, { maxZoom: 14 });
+              } catch(e){}
+
+              return Promise.resolve({ url:u, features: gj.features ? gj.features.length : 0 });
+            }).catch(function(err){ tried.push({ url:u, error:err && err.message ? err.message : String(err) }); return tryNext(i+1); });
+          }).catch(function(err){ tried.push({ url:u, error:err && err.message ? err.message : String(err) }); return tryNext(i+1); });
+        }
+        return tryNext(0);
+      }
+
+      var topoCandidates = [
+        'TOPONIMI_KANTORPEMERINTAH_PT.geojson',
+        'data/TOPONIMI_KANTORPEMERINTAH_PT.geojson',
+        'data/toponimi_kantorpemerintah_pt.geojson',
+        'toponimi_kantorpemerintah_pt.geojson'
+      ];
+
+      loadToponimiGeojson(topoCandidates).then(function(res){ console.log('Toponimi loaded from', res.url, 'features:', res.features); }).catch(function(err){ console.warn('Toponimi load failed', err); var legendContainer = document.getElementById('legendItems'); if (legendContainer && !legendContainer.innerHTML.trim()) legendContainer.innerHTML = '<div class="small">Legend kosong — Toponimi belum dimuat. Letakkan file <code>TOPONIMI_KANTORPEMERINTAH_PT.geojson</code> di folder aplikasi atau <code>data/</code> lalu reload halaman.</div>'; });
+
+      // --- Administrative search UI (build now, independent of getLocation)
       (function(){
-        var searchContainer = document.createElement('div');
-        searchContainer.style.marginTop = '12px';
-        searchContainer.innerHTML = '<b>Search by Administrative</b><br/>' +
-          '<label style="display:block;margin-top:6px; font-weight:600;">Level</label>' +
-          '<select id="search_admin_level" style="width:100%; padding:6px; box-sizing:border-box">' +
-            '<option value="prov">Provinsi</option>' +
-            '<option value="kab">Kabupaten/Kota</option>' +
-            '<option value="kec">Kecamatan</option>' +
-            '<option value="desa">Desa</option>' +
-          '</select>' +
-          '<label style="display:block;margin-top:8px; font-weight:600;">Nama wilayah</label>' +
-          '<div style="position:relative">' +
-            '<input id="search_admin_query" type="text" autocomplete="off" placeholder="Masukkan nama (mis. Jawa Tengah)" style="width:100%; padding:6px; box-sizing:border-box" />' +
-            '<div id="admin_suggestions" style="position:absolute; left:0; right:0; top:40px; background:#fff; border:1px solid #ddd; max-height:180px; overflow:auto; display:none; z-index:2000;"></div>' +
-          '</div>' +
-          '<div style="display:flex; gap:8px; margin-top:8px;">' +
-            '<button id="btn_admin_search" class="btn">Search</button>' +
-            '<button id="btn_admin_clear" class="btn secondary">Clear</button>' +
-          '</div>' +
-          '<div id="admin_search_results" style="margin-top:8px; max-height:200px; overflow:auto; font-size:13px"></div>';
-        document.getElementById('sidebarRight').appendChild(searchContainer);
+        var sidebarRightEl = document.getElementById('sidebarRight');
+        if (sidebarRightEl) {
+          var searchWrap = document.createElement('div');
+          searchWrap.style.marginTop = '8px';
+          searchWrap.innerHTML = '<label style="font-weight:700;margin-bottom:6px;">Search by Administrative</label>' +
+                                 '<div style="display:flex;gap:8px;margin-bottom:6px">' +
+                                 '<select id="adminLevelSelect" style="flex:0 0 48%;padding:6px;border-radius:4px;border:1px solid #ccc">' +
+                                   '<option value="prov">Provinsi</option>' +
+                                   '<option value="kab">Kabupaten/Kota</option>' +
+                                   '<option value="kec">Kecamatan</option>' +
+                                   '<option value="desa">Desa/Kelurahan</option>' +
+                                 '</select>' +
+                                 '<input id="adminSearchInput" placeholder="ketik nama..." style="flex:1;padding:6px;border-radius:4px;border:1px solid #ccc" />' +
+                                 '</div>' +
+                                 '<div id="admin_suggestions" style="max-height:160px;overflow:auto;border:1px solid #eee;padding:6px;border-radius:6px;background:#fff"></div>';
+          sidebarRightEl.insertBefore(searchWrap, sidebarRightEl.firstChild.nextSibling);
+        }
 
-        var suggestionBox = document.getElementById('admin_suggestions');
-        var queryInput = document.getElementById('search_admin_query');
+        var levelSelect = document.getElementById('adminLevelSelect');
+        var searchInput = document.getElementById('adminSearchInput');
+        var suggestions = document.getElementById('admin_suggestions');
 
-        function debounce(fn, wait){ var t; return function(){ var args=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(null, args); }, wait); }; }
+        function keyForLevel(level) { switch(level){ case 'prov': return 'WADMPR'; case 'kab': return 'WADMKK'; case 'kec': return 'WADMKC'; case 'desa': return 'WADMKD'; default: return 'WADMPR'; } }
+        function urlForKey(key){ return { WADMPR:'data/WADMPR.geojson', WADMKK:'data/WADMKK.geojson', WADMKC:'data/WADMKC.geojson', WADMKD:'data/WADMKD.geojson' }[key]; }
+        function matchName(props){ return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || props.name || '').toString(); }
 
-        function getNamesFromLayer(key){
-          return new Promise(function(resolve, reject){
-            var layer = adminLayers[key];
-            if (!layer) return reject(new Error('Layer not loaded'));
-            var set = {}; var list = [];
-            layer.eachLayer(function(l){
-              var feat = l.feature; var props = feat && feat.properties ? feat.properties : {};
-              var name = matchName(props);
-              if (!name) return;
-              var n = String(name).trim();
-              if (n && !set[n.toLowerCase()]){ set[n.toLowerCase()] = true; list.push(n); }
-            });
-            resolve(list.sort(function(a,b){ return a.localeCompare(b); }));
+        function ensureAdminLayer(levelKey) {
+          var key = keyForLevel(levelKey);
+          if (adminLayers[key]) return Promise.resolve(adminLayers[key]);
+          var url = urlForKey(key);
+          return fetch(url).then(function(resp){ if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); }).then(function(gj){
+            var layer = L.geoJSON(gj, { style: styleFor(levelKey), onEachFeature: function(fe, lyr){ var props = fe.properties || {}; lyr.bindPopup(matchName(props)); } }).addTo(map);
+            adminLayers[key] = { layer: layer, geojson: gj };
+            overlayMaps['Administrative — ' + key] = layer;
+            try { layerControl.remove(); } catch(e){};
+            layerControl = L.control.layers(baseMaps, overlayMaps, { collapsed:false }).addTo(map);
+            return adminLayers[key];
           });
         }
 
-        function fetchNamesFromGeojson(url){
-          return fetch(url, {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function(gj){
-            var set = {}; var list = [];
-            if (!gj || !gj.features) return [];
-            gj.features.forEach(function(f){ var props = f.properties || {}; var name = matchName(props); if(!name) return; var n=String(name).trim(); if(n && !set[n.toLowerCase()]){ set[n.toLowerCase()]=true; list.push(n); } });
-            return list.sort(function(a,b){ return a.localeCompare(b); });
-          }).catch(function(){ return []; });
-        }
-
-        function showSuggestions(arr){
-          if (!arr || arr.length === 0){ suggestionBox.style.display = 'none'; suggestionBox.innerHTML = ''; return; }
-          suggestionBox.innerHTML = '';
-          var max = Math.min(arr.length, 10);
-          for (var i=0;i<max;i++){
-            var item = document.createElement('div');
-            item.style.padding = '6px 8px';
-            item.style.borderBottom = '1px solid #f1f1f1';
-            item.style.cursor = 'pointer';
-            item.textContent = arr[i];
-            (function(text){ item.addEventListener('click', function(){ queryInput.value = text; suggestionBox.style.display = 'none'; suggestionBox.innerHTML = ''; document.getElementById('btn_admin_search').click(); }); })(arr[i]);
-            suggestionBox.appendChild(item);
-          }
-          suggestionBox.style.display = 'block';
-        }
-
-        function updateSuggestionsForQuery(q){
-          var level = document.getElementById('search_admin_level').value;
-          var key = keyForLevel(level);
-          console.log('[admin-autocomplete] updateSuggestionsForQuery:', key, q);
-          suggestionBox.innerHTML = '';
-          suggestionBox.style.display = 'block';
-          // show loading hint
-          var loading = document.createElement('div'); loading.style.padding='6px'; loading.style.color='#666'; loading.textContent = 'Loading suggestions...'; suggestionBox.appendChild(loading);
-
-          var promiseNames;
-          if (adminLayers[key]) {
-            promiseNames = getNamesFromLayer(key);
-          } else {
-            // prefer to load layer (gives better chance to access names, and will surface debug if fails)
-            promiseNames = loadAdminGeojson(key, urlForKey(key), level).then(function(){
-              return getNamesFromLayer(key);
-            }).catch(function(err){
-              console.warn('[admin-autocomplete] loadAdminGeojson failed:', err);
-              // as fallback try fetching raw geojson
-              return fetchNamesFromGeojson(urlForKey(key));
-            });
-          }
-
-          promiseNames.then(function(list){
-            // remove loading
-            suggestionBox.innerHTML = '';
-            if (!list || list.length === 0) {
-              suggestionBox.style.display = 'none';
-              return;
-            }
-            if (!q) { showSuggestions(list.slice(0,10)); return; }
-            var mq = q.toLowerCase();
-            var filtered = list.filter(function(s){ return s.toLowerCase().indexOf(mq) !== -1; });
-            showSuggestions(filtered);
-          }).catch(function(err){
-            console.warn('[admin-autocomplete] promiseNames failed', err);
-            suggestionBox.innerHTML = '';
-            suggestionBox.style.display = 'none';
-          });
-        }
-
-        var debouncedUpdate = debounce(function(){ updateSuggestionsForQuery(queryInput.value.trim()); }, 250);(function(){ updateSuggestionsForQuery(queryInput.value.trim()); }, 250);
-        queryInput.addEventListener('input', debouncedUpdate);
-        queryInput.addEventListener('focus', function(){ debouncedUpdate(); });
-        queryInput.addEventListener('blur', function(){ setTimeout(function(){ suggestionBox.style.display = 'none'; }, 200); });
-
-        var highlightLayer = null;
-        function clearHighlight() { if (highlightLayer) { try{ map.removeLayer(highlightLayer); }catch(e){} highlightLayer = null; } }
-
-        function searchInLayer(key, q){
-          return new Promise(function(resolve, reject){
-            var layer = adminLayers[key];
-            if (!layer) return reject(new Error('Layer not loaded'));
+        var searchTimer = null;
+        function doSearch() {
+          var q = (searchInput.value || '').trim();
+          var lvl = levelSelect.value || 'desa';
+          suggestions.innerHTML = '';
+          if (!q) return;
+          ensureAdminLayer(lvl).then(function(res){
+            var gj = res.geojson;
             var matches = [];
-            layer.eachLayer(function(l){ var feat = l.feature; var props = feat && feat.properties ? feat.properties : {}; var name = matchName(props); if(!name) return; if(name.toLowerCase().indexOf(q.toLowerCase()) !== -1){ matches.push({ name:name, layer:l, feature:feat }); } });
-            resolve(matches);
-          });
-        }
-
-        function hideAllAdminLayers(){
-          Object.keys(adminLayers).forEach(function(k){
-            var layer = adminLayers[k];
-            try{
-              if (!layer) return;
-              // prefer to dim via setStyle if available
-              if (typeof layer.setStyle === 'function') {
-                layer.setStyle({ color: 'rgba(0,0,0,0)', weight: 0, opacity: 0, fillOpacity: 0 });
-              } else {
-                if (map.hasLayer && map.hasLayer(layer)) map.removeLayer(layer);
-              }
-            }catch(e){ console.warn('hideAllAdminLayers err', e); }
-          });
-        }
-        function restoreAdminLayers(){
-          Object.keys(adminLayers).forEach(function(k){
-            var layer = adminLayers[k];
-            var lvl = adminLayerLevels[k] || null;
-            try{
-              if (!layer) return;
-              if (typeof layer.setStyle === 'function' && lvl) {
-                var s = styleFor(lvl);
-                // setStyle expects color/weight/opacity/fillOpacity
-                layer.setStyle({ color: s.color || '#000', weight: s.weight || 1, opacity: s.opacity || 1, fillOpacity: s.fill ? (s.fillOpacity||0.2) : 0 });
-                // ensure layer is added to map
-                if (map.hasLayer && !map.hasLayer(layer)) map.addLayer(layer);
-              } else {
-                if (map.hasLayer && !map.hasLayer(layer)) map.addLayer(layer);
-              }
-            }catch(e){ console.warn('restoreAdminLayers err', e); }
-          });
-        }
-
-        function showResultsList(matches){
-          var container = document.getElementById('admin_search_results');
-          container.innerHTML = '';
-          if(!matches || matches.length===0){ container.innerHTML = '<div class="small">Tidak ditemukan.</div>'; return; }
-
-          // When search results are shown, hide all full admin layers and display only the matched feature(s).
-          hideAllAdminLayers();
-          // remove previous highlightLayer if any
-          clearHighlight();
-
-          // Create a FeatureCollection with all matched features
-          var fc = { type: 'FeatureCollection', features: matches.map(function(m){ return m.feature; }) };
-          highlightLayer = L.geoJSON(fc, {
-            style: function(){ return { color:'#ff7800', weight:4, fill:false }; }
-          }).addTo(map);
-
-          // zoom to bounds of matched features
-          try {
-            var bounds = highlightLayer.getBounds();
-            if (bounds && bounds.isValid()) map.fitBounds(bounds, { maxZoom: 13 });
-          } catch(e){ console.warn(e); }
-
-          // list results with option to focus a single feature (still only matched features are visible)
-          matches.forEach(function(m, idx){
-            var row = document.createElement('div');
-            row.style.padding='6px'; row.style.borderBottom='1px solid #eee'; row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center';
-            row.innerHTML = '<div style="flex:1"><b>' + (idx+1) + '</b> ' + m.name + '</div>';
-            var btn = document.createElement('button'); btn.className='btn tertiary'; btn.textContent='Zoom';
-            btn.addEventListener('click', function(){
-              try{
-                // zoom to this matched feature only
-                var singleFc = { type:'FeatureCollection', features:[ m.feature ] };
-                // replace highlightLayer with single feature
-                if (highlightLayer) { try{ map.removeLayer(highlightLayer); }catch(e){} highlightLayer = null; }
-                highlightLayer = L.geoJSON(singleFc, { style:function(){ return { color:'#ff7800', weight:4, fill:false }; } }).addTo(map);
-                var b = L.geoJSON(m.feature).getBounds(); if (b && b.isValid()) map.fitBounds(b, { maxZoom:13 });
-              } catch(e){ console.warn(e); }
+            var qlow = q.toLowerCase();
+            (gj.features || []).forEach(function(f){
+              var name = matchName(f.properties || '').toLowerCase();
+              if (name.indexOf(qlow) !== -1) matches.push({ feature: f, name: matchName(f.properties || '') });
             });
-            row.appendChild(btn);
-            container.appendChild(row);
-          });
-
-          // add a restore button to allow returning to full layer view
-          var restoreBtn = document.createElement('button'); restoreBtn.className='btn secondary'; restoreBtn.style.marginTop='8px'; restoreBtn.textContent = 'Restore all administrative layers';
-          restoreBtn.addEventListener('click', function(){ clearHighlight(); restoreAdminLayers(); container.innerHTML = ''; document.getElementById('search_admin_query').value = ''; });
-          container.appendChild(restoreBtn);
+            if (!matches.length) { suggestions.innerHTML = '<div class="small">Tidak ditemukan administrasi dengan nama tersebut.</div>'; return; }
+            matches.slice(0,50).forEach(function(m){
+              var d = document.createElement('div'); d.style.padding='6px'; d.style.borderBottom='1px solid #f0f0f0'; d.style.cursor='pointer';
+              d.textContent = m.name;
+              d.addEventListener('click', function(){
+                var geom = m.feature.geometry;
+                var layer = adminLayers[keyForLevel(lvl)].layer;
+                var tmp = L.geoJSON(m.feature);
+                try { map.fitBounds(tmp.getBounds(), { maxZoom: 14 }); } catch(e) { if (geom && geom.type === 'Point') map.setView([geom.coordinates[1], geom.coordinates[0]], 14); }
+                var hl = L.geoJSON(m.feature, { style: function(){ return { color:'#ff7800', weight:3, fill:false }; }, pointToLayer: function(fe, latlng){ return L.circleMarker(latlng, { radius:10, color:'#ff7800', weight:2, fill:false }); } }).addTo(map);
+                setTimeout(function(){ map.removeLayer(hl); }, 4000);
+                try { layer.eachLayer(function(l){ if (l.feature && l.feature === m.feature) { l.openPopup(); } }); } catch(e){}
+              });
+              suggestions.appendChild(d);
+            });
+          }).catch(function(err){ suggestions.innerHTML = '<div class="small">Gagal memuat layer administrasi. Pastikan file berada di folder <code>data/</code> ('+err.message+').</div>'; });
         }
 
-        // Search handler
-        document.getElementById('btn_admin_search').addEventListener('click', function(){ var level = document.getElementById('search_admin_level').value; var q = document.getElementById('search_admin_query').value.trim(); if(!q){ alert('Masukkan nama wilayah yang ingin dicari.'); return; } var key = keyForLevel(level); if(!adminLayers[key]){ loadAdminGeojson(key, urlForKey(key), level).then(function(){ return searchInLayer(key, q);} ).then(function(matches){ showResultsList(matches); }).catch(function(err){ alert('Gagal memuat layer administratif untuk pencarian: ' + (err && err.message ? err.message : err)); }); } else { searchInLayer(key, q).then(function(matches){ showResultsList(matches); }); } });
-
-        document.getElementById('btn_admin_clear').addEventListener('click', function(){ document.getElementById('search_admin_query').value=''; document.getElementById('admin_search_results').innerHTML=''; clearHighlight(); });
+        if (searchInput) searchInput.addEventListener('input', function(){ if (searchTimer) clearTimeout(searchTimer); searchTimer = setTimeout(doSearch, 350); });
+        if (levelSelect) levelSelect.addEventListener('change', function(){ if (searchInput.value) doSearch(); });
 
       })();
+
     </script>
   </body>
 </html>
