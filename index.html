@@ -125,7 +125,6 @@
       }
 
       @media (max-width: 700px) {
-        /* hide lat/lon columns on mobile (indexes adjusted below) */
         table th:nth-child(5),
         table td:nth-child(5),
         table th:nth-child(6),
@@ -142,14 +141,31 @@
         z-index: 1200;
       }
 
-      /* admin label style */
+      /* admin label style and buffer variants */
       .admin-label {
         background: rgba(255, 255, 255, 0.85);
         padding: 2px 4px;
         border-radius: 4px;
         font-size: 11px;
         color: #111;
-        box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+      }
+      .admin-label-prov {
+        text-shadow: 0 0 8px #fff, 0 0 8px #fff;
+        font-weight: 700;
+      }
+      .admin-label-kab {
+        text-shadow: 0 0 6px #fff, 0 0 6px #fff;
+      }
+      .admin-label-kec {
+        text-shadow: 0 0 4px #fff, 0 0 4px #fff;
+      }
+      .admin-label-desa {
+        text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+      }
+
+      /* suggestion box */
+      #admin_suggestions div:hover {
+        background: #f5f8ff;
       }
     </style>
   </head>
@@ -250,10 +266,526 @@
       L.control.scale().addTo(map);
       var baseMaps = { "OSM Standard": osm };
       L.control.layers(baseMaps, null, { collapsed: false }).addTo(map);
-      map.whenReady(function () {
-        // Administrative layers are intentionally hidden from direct sidebar controls.
-        // They remain part of the system and can be loaded programmatically.
-        // New feature: Search by Administrative (uses those layers)
+
+      // --- State ---
+      var allPoints = [];
+      var tempMarker = null;
+
+      // --- DOM ---
+      var respondentIdEl = document.getElementById("respondent_id");
+      var stakeholderEl = document.getElementById("stakeholder_group");
+      var mappingObjectEl = document.getElementById("mapping_object");
+      var pointIdEl = document.getElementById("point_id");
+      var reasonEl = document.getElementById("reason");
+      var mapSourceEl = document.getElementById("map_source");
+      var accuracyEl = document.getElementById("accuracy_m");
+      var saveBtn = document.getElementById("savePointBtn");
+      var clearFormBtn = document.getElementById("clearFormBtn");
+      var pointsCountEl = document.getElementById("pointsCount");
+      var pointsTable = document.getElementById("pointsTable");
+      var pointsTableBody = pointsTable.querySelector("tbody");
+      var exportCsvBtn = document.getElementById("exportCsv");
+      var exportGeoBtn = document.getElementById("exportGeojson");
+      var clearAllBtn = document.getElementById("clearAll");
+      var centerBtn = document.getElementById("centerBtn");
+      var getLocationBtn = document.getElementById("getLocationBtn");
+      var zoomInBtn = document.getElementById("zoomInBtn");
+      var zoomOutBtn = document.getElementById("zoomOutBtn");
+
+      function currentRespondentId() {
+        return respondentIdEl.value ? respondentIdEl.value.trim() : "";
+      }
+      function pointsForRespondent(rid) {
+        return allPoints.filter(function (p) {
+          return p.respondent_id === rid;
+        });
+      }
+
+      function updatePointsUI() {
+        var rid = currentRespondentId();
+        var pts = rid ? pointsForRespondent(rid) : [];
+        pointsCountEl.textContent = pts.length + " points";
+        if (!pts || pts.length === 0) {
+          pointsTable.style.display = "none";
+          pointsTableBody.innerHTML = "";
+          return;
+        }
+        pointsTable.style.display = "table";
+        pointsTableBody.innerHTML = "";
+        pts.forEach(function (p, i) {
+          var tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" +
+            (i + 1) +
+            "</td>" +
+            "<td>" +
+            p.point_id +
+            "</td>" +
+            "<td>" +
+            (p.mapping_object ? p.mapping_object : "") +
+            "</td>" +
+            "<td>" +
+            p.latitude.toFixed(6) +
+            "</td>" +
+            "<td>" +
+            p.longitude.toFixed(6) +
+            "</td>" +
+            "<td>" +
+            (p.reason ? p.reason.substring(0, 20) : "") +
+            "</td>" +
+            '<td><button data-pid="' +
+            p.point_id +
+            '" class="btn secondary smallBtn">Del</button></td>';
+          pointsTableBody.appendChild(tr);
+        });
+        // attach delete handlers
+        pointsTableBody.querySelectorAll(".smallBtn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var pid = this.getAttribute("data-pid");
+            var rid = currentRespondentId();
+            var idx = allPoints.findIndex(function (x) {
+              return x.point_id === pid && x.respondent_id === rid;
+            });
+            if (idx >= 0) {
+              if (allPoints[idx].marker) map.removeLayer(allPoints[idx].marker);
+              allPoints.splice(idx, 1);
+              updatePointsUI();
+            }
+          });
+        });
+      }
+
+      function resetFormFields() {
+        if (pointIdEl) {
+          pointIdEl.value = "";
+          pointIdEl.removeAttribute("data-lat");
+          pointIdEl.removeAttribute("data-lon");
+        }
+        if (reasonEl) reasonEl.value = "";
+        if (mapSourceEl) mapSourceEl.value = "webGIS";
+        if (accuracyEl) accuracyEl.value = "";
+      }
+
+      // helper: compute next index for a base mapping object for a respondent
+      function getNextMappingIndex(base, rid) {
+        if (!base) return 1;
+        var prefix = base + "_";
+        var maxIndex = 0;
+        allPoints.forEach(function (p) {
+          if (rid && p.respondent_id !== rid) return;
+          if (!p.mapping_object) return;
+          if (p.mapping_object === base) {
+            maxIndex = Math.max(maxIndex, 1);
+            return;
+          }
+          if (p.mapping_object.indexOf(prefix) === 0) {
+            var tail = p.mapping_object.slice(prefix.length);
+            var n = parseInt(tail, 10);
+            if (!isNaN(n)) maxIndex = Math.max(maxIndex, n);
+          }
+        });
+        return maxIndex + 1;
+      }
+
+      // Map click handler
+      map.on("click", function (e) {
+        if (tempMarker) map.removeLayer(tempMarker);
+        tempMarker = L.marker(e.latlng, { draggable: true }).addTo(map);
+        tempMarker.on("dragend", function (ev) {
+          var ll = ev.target.getLatLng();
+          if (pointIdEl) {
+            pointIdEl.dataset.lat = ll.lat;
+            pointIdEl.dataset.lon = ll.lng;
+          }
+        });
+
+        var rid = currentRespondentId() || "R?_";
+        var idx = 1;
+        if (currentRespondentId()) idx = pointsForRespondent(currentRespondentId()).length + 1;
+
+        if (pointIdEl) pointIdEl.value = rid + "_P" + idx;
+
+        // auto-fill mapping object
+        try {
+          if (mappingObjectEl) {
+            var val = mappingObjectEl.value ? mappingObjectEl.value.trim() : "";
+            if (!val) {
+              var mo = rid && rid !== "R?_" ? rid + "_MO" + idx : "MO_P" + (allPoints.length + 1);
+              mappingObjectEl.value = mo;
+            } else {
+              var m = val.match(/^(.*?)[_\-]?0*(\d+)$/);
+              var base = m && m[1] ? m[1] : val;
+              var next = getNextMappingIndex(base, currentRespondentId());
+              var formatted = next < 10 ? "0" + next : "" + next;
+              mappingObjectEl.value = base + "_" + formatted;
+            }
+          }
+        } catch (err) {}
+
+        if (pointIdEl) {
+          pointIdEl.dataset.lat = e.latlng.lat;
+          pointIdEl.dataset.lon = e.latlng.lng;
+        }
+      });
+
+      // Save point
+      if (saveBtn)
+        saveBtn.addEventListener("click", function () {
+          var rid = currentRespondentId();
+          if (!rid && !confirm("Anda belum mengisi Respondent ID. Lanjutkan tanpa respondent_id?")) return;
+          if (!pointIdEl || !pointIdEl.dataset.lat || !pointIdEl.dataset.lon) {
+            alert("Silakan klik peta untuk memilih lokasi terlebih dahulu.");
+            return;
+          }
+
+          var lat = parseFloat(pointIdEl.dataset.lat);
+          var lon = parseFloat(pointIdEl.dataset.lon);
+          var pid = "";
+          if (pointIdEl.value && pointIdEl.value.trim()) pid = pointIdEl.value.trim();
+          else pid = rid ? rid + "_P" + (pointsForRespondent(rid).length + 1) : "P" + (allPoints.length + 1);
+
+          if (
+            allPoints.some(function (x) {
+              return x.point_id === pid && x.respondent_id === rid;
+            })
+          ) {
+            pid = pid + "_" + (new Date().getTime() % 10000);
+          }
+
+          var acc = accuracyEl && accuracyEl.value ? accuracyEl.value.trim() : "";
+          if (acc && isNaN(Number(acc))) {
+            if (!confirm("Nilai accuracy bukan numerik. Simpan sebagai teks?")) return;
+          }
+
+          var rec = {
+            respondent_id: rid || "",
+            stakeholder_group: stakeholderEl ? stakeholderEl.value : "",
+            mapping_object: mappingObjectEl ? (mappingObjectEl.value ? mappingObjectEl.value.trim() : "") : "",
+            point_id: pid,
+            latitude: lat,
+            longitude: lon,
+            timestamp: new Date().toISOString(),
+            reason: reasonEl ? (reasonEl.value ? reasonEl.value.trim() : "") : "",
+            map_source: mapSourceEl ? mapSourceEl.value : "",
+            accuracy_m: acc,
+          };
+
+          var marker = L.circleMarker([lat, lon], { radius: 6, color: "#d9534f" }).addTo(map);
+          var popupParts = ["<b>" + pid + "</b>"];
+          if (rec.mapping_object) popupParts.push("<i>" + rec.mapping_object + "</i>");
+          if (rec.reason) popupParts.push(rec.reason);
+          marker.bindPopup(popupParts.join("<br/>"));
+
+          rec.marker = marker;
+          allPoints.push(rec);
+
+          if (tempMarker) {
+            map.removeLayer(tempMarker);
+            tempMarker = null;
+          }
+          resetFormFields();
+          updatePointsUI();
+        });
+
+      // Export helpers
+      function escapeCsvCell(s) {
+        if (s === null || s === undefined) return '""';
+        var str = String(s).replace(/"/g, '""');
+        return '"' + str + '"';
+      }
+
+      function convertToCsv(arr) {
+        var header = ["respondent_id", "stakeholder_group", "mapping_object", "point_id", "latitude", "longitude", "timestamp", "reason", "map_source", "accuracy_m"];
+        var lines = [header.join(",")];
+        arr.forEach(function (r) {
+          var row = [
+            escapeCsvCell(r.respondent_id || ""),
+            escapeCsvCell(r.stakeholder_group || ""),
+            escapeCsvCell(r.mapping_object || ""),
+            escapeCsvCell(r.point_id || ""),
+            r.latitude != null ? r.latitude : "",
+            r.longitude != null ? r.longitude : "",
+            escapeCsvCell(r.timestamp || ""),
+            escapeCsvCell(r.reason || ""),
+            escapeCsvCell(r.map_source || ""),
+            escapeCsvCell(r.accuracy_m || ""),
+          ];
+          lines.push(row.join(","));
+        });
+        return lines.join("\n");
+      }
+
+      function downloadText(filename, text, mimeType) {
+        mimeType = mimeType || "text/csv;charset=utf-8;";
+        var bom = "\uFEFF";
+        var blob = new Blob([bom + text], { type: mimeType });
+        var link = document.createElement("a");
+        if (link.download !== undefined) {
+          var url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", filename);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } else alert("Browser Anda tidak mendukung pengunduhan otomatis.");
+      }
+
+      // Export CSV
+      if (exportCsvBtn)
+        exportCsvBtn.addEventListener("click", function () {
+          var rid = currentRespondentId();
+          var arr = [];
+          if (rid) {
+            var count = pointsForRespondent(rid).length;
+            if (count < 10 && !confirm("Perhatian: untuk respondent " + rid + " hanya terkumpul " + count + " titik. Minimum yang direkomendasikan adalah 10 titik. Apakah Anda tetap ingin mengekspor data ini?")) return;
+            arr = pointsForRespondent(rid);
+          } else {
+            if (!confirm("Tidak ada Respondent ID. Akan mengekspor semua titik (" + allPoints.length + "). Lanjutkan?")) return;
+            arr = allPoints;
+          }
+          if (!arr || arr.length === 0) {
+            alert("Tidak ada titik untuk diekspor.");
+            return;
+          }
+          var csv = convertToCsv(arr);
+          var fname = "preference_points_" + (rid ? rid : "all") + "_" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "_") + ".csv";
+          downloadText(fname, csv, "text/csv;charset=utf-8;");
+        });
+
+      // Export GeoJSON
+      if (exportGeoBtn)
+        exportGeoBtn.addEventListener("click", function () {
+          var rid = currentRespondentId();
+          var arr = [];
+          if (rid) {
+            var count = pointsForRespondent(rid).length;
+            if (count < 10 && !confirm("Perhatian: untuk respondent " + rid + " hanya terkumpul " + count + " titik. Minimum yang direkomendasikan adalah 10 titik. Apakah Anda tetap ingin mengekspor data ini?")) return;
+            arr = pointsForRespondent(rid);
+          } else {
+            if (!confirm("Tidak ada Respondent ID. Akan mengekspor semua titik (" + allPoints.length + "). Lanjutkan?")) return;
+            arr = allPoints;
+          }
+          if (!arr || arr.length === 0) {
+            alert("Tidak ada titik untuk diekspor.");
+            return;
+          }
+          var gj = { type: "FeatureCollection", features: [] };
+          arr.forEach(function (p) {
+            var f = {
+              type: "Feature",
+              properties: {
+                respondent_id: p.respondent_id,
+                stakeholder_group: p.stakeholder_group,
+                mapping_object: p.mapping_object,
+                point_id: p.point_id,
+                timestamp: p.timestamp,
+                reason: p.reason,
+                map_source: p.map_source,
+                accuracy_m: p.accuracy_m,
+              },
+              geometry: { type: "Point", coordinates: [p.longitude, p.latitude] },
+            };
+            gj.features.push(f);
+          });
+          var fname = "preference_points_geojson_" + (rid ? rid : "all") + "_" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "_") + ".geojson";
+          downloadText(fname, JSON.stringify(gj), "application/geo+json;charset=utf-8;");
+        });
+
+      // Clear all
+      if (clearAllBtn)
+        clearAllBtn.addEventListener("click", function () {
+          if (!confirm("Hapus semua titik?")) return;
+          allPoints.forEach(function (p) {
+            if (p.marker) map.removeLayer(p.marker);
+          });
+          allPoints = [];
+          updatePointsUI();
+        });
+
+      // Center Btn
+      if (centerBtn)
+        centerBtn.addEventListener("click", function () {
+          if (navigator.geolocation)
+            navigator.geolocation.getCurrentPosition(
+              function (pos) {
+                map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+              },
+              function () {
+                alert("Tidak dapat memperoleh lokasi saat ini.");
+              }
+            );
+          else alert("Geolocation tidak tersedia di browser ini.");
+        });
+
+      // Right-panel handlers
+      if (getLocationBtn)
+        getLocationBtn.addEventListener("click", function () {
+          if (!navigator.geolocation) {
+            alert("Geolocation tidak tersedia di browser ini.");
+            return;
+          }
+          getLocationBtn.disabled = true;
+          getLocationBtn.textContent = "Locating...";
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              var lat = pos.coords.latitude,
+                lon = pos.coords.longitude;
+              map.setView([lat, lon], 16);
+              var m = L.circleMarker([lat, lon], { radius: 8, color: "#337ab7" }).addTo(map);
+              m.bindPopup("<b>Your location</b>").openPopup();
+              setTimeout(function () {
+                if (map && m) map.removeLayer(m);
+              }, 10000);
+              getLocationBtn.disabled = false;
+              getLocationBtn.textContent = "Get my location";
+            },
+            function (err) {
+              alert("Gagal mendapatkan lokasi: " + (err.message || "permission denied"));
+              getLocationBtn.disabled = false;
+              getLocationBtn.textContent = "Get my location";
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        });
+      if (zoomInBtn)
+        zoomInBtn.addEventListener("click", function () {
+          map.zoomIn();
+        });
+      if (zoomOutBtn)
+        zoomOutBtn.addEventListener("click", function () {
+          map.zoomOut();
+        });
+
+      // avoid auto-center on load
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function () {},
+          function () {},
+          { enableHighAccuracy: false }
+        );
+      }
+
+      // --- Administrative layers (external data/) ---
+      var adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
+
+      function styleFor(level) {
+        switch (level) {
+          case "prov":
+            return { color: "#4b2e83", weight: 5, fill: false, opacity: 0.9 };
+          case "kab":
+            return { color: "#2b7fb8", weight: 3.5, fill: false, opacity: 0.9 };
+          case "kec":
+            return { color: "#2c7a3e", weight: 2.5, fill: false, opacity: 0.9 };
+          case "desa":
+            return { color: "#666", weight: 1.5, fill: false, opacity: 0.9 };
+          default:
+            return { color: "#000", weight: 1, fill: false };
+        }
+      }
+
+      async function loadAdminGeojson(key, url, level) {
+        // try a few candidate URLs
+        var candidates = [url, url.toLowerCase(), url.replace(/\.geojson$/i, ".json"), url.replace(/^data\//, "")];
+        // absolute based on current location
+        try {
+          var base = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
+          candidates.push(base + "/" + url);
+        } catch (e) {}
+        candidates = candidates.filter(function (v, i) {
+          return candidates.indexOf(v) === i;
+        });
+
+        if (adminLayers[key]) {
+          try {
+            map.removeLayer(adminLayers[key]);
+          } catch (e) {}
+          adminLayers[key] = null;
+        }
+
+        var errors = [];
+        for (var i = 0; i < candidates.length; i++) {
+          var u = candidates[i];
+          try {
+            var resp = await fetch(u, { cache: "no-store" });
+            if (!resp.ok) {
+              errors.push({ url: u, status: resp.status });
+              continue;
+            }
+            var gj = await resp.json();
+            var layer = L.geoJSON(gj, {
+              style: styleFor(level),
+              onEachFeature: function (feature, lyr) {
+                var props = feature && feature.properties ? feature.properties : {};
+                var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "";
+                var cls = "admin-label admin-label-" + level;
+                if (name) lyr.bindTooltip(String(name), { permanent: true, direction: "center", className: cls });
+              },
+            }).addTo(map);
+            if (level === "prov")
+              try {
+                if (layer.bringToBack) layer.bringToBack();
+              } catch (e) {}
+            if (level === "desa")
+              try {
+                if (layer.bringToFront) layer.bringToFront();
+              } catch (e) {}
+            adminLayers[key] = layer;
+            // remove any debug entry
+            var dbg = document.getElementById("admin_debug_" + key);
+            if (dbg) dbg.remove();
+            console.log("Loaded", key, "from", u);
+            return layer;
+          } catch (err) {
+            errors.push({ url: u, error: err && err.message ? err.message : String(err) });
+            continue;
+          }
+        }
+        // show debug panel
+        var container = document.getElementById("sidebarRight");
+        var panel = document.createElement("div");
+        panel.id = "admin_debug_" + key;
+        panel.style.background = "rgba(255,240,240,0.95)";
+        panel.style.padding = "6px";
+        panel.style.marginTop = "8px";
+        panel.style.border = "1px solid #f2a0a0";
+        panel.style.borderRadius = "6px";
+        var html = "<b>Failed to load " + key + '</b><br/><div style="font-size:12px;margin-top:6px">Attempted URLs:</div><ul>';
+        errors.forEach(function (e) {
+          if (e.status) html += "<li>" + e.url + " — HTTP " + e.status + "</li>";
+          else html += "<li>" + e.url + " — " + (e.error || "network error") + "</li>";
+        });
+        html += '</ul><div style="font-size:12px;margin-top:6px">Pastikan file tersedia di folder <code>/data/</code> dengan nama yang tepat (case-sensitive).</div>';
+        panel.innerHTML = html;
+        container.appendChild(panel);
+        console.error("Failed loading", key, errors);
+        throw new Error("Failed to load " + key);
+      }
+
+      function keyForLevel(level) {
+        switch (level) {
+          case "prov":
+            return "WADMPR";
+          case "kab":
+            return "WADMKK";
+          case "kec":
+            return "WADMKC";
+          case "desa":
+            return "WADMKD";
+          default:
+            return "WADMPR";
+        }
+      }
+      function urlForKey(key) {
+        return { WADMPR: "data/WADMPR.geojson", WADMKK: "data/WADMKK.geojson", WADMKC: "data/WADMKC.geojson", WADMKD: "data/WADMKD.geojson" }[key];
+      }
+      function matchName(props) {
+        return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "").toString();
+      }
+
+      // build Search by Administrative UI (hidden layer controls)
+      (function () {
         var searchContainer = document.createElement("div");
         searchContainer.style.marginTop = "12px";
         searchContainer.innerHTML =
@@ -277,7 +809,6 @@
           '<div id="admin_search_results" style="margin-top:8px; max-height:200px; overflow:auto; font-size:13px"></div>';
         document.getElementById("sidebarRight").appendChild(searchContainer);
 
-        // Autocomplete helpers
         var suggestionBox = document.getElementById("admin_suggestions");
         var queryInput = document.getElementById("search_admin_query");
 
@@ -317,6 +848,35 @@
           });
         }
 
+        function fetchNamesFromGeojson(url) {
+          return fetch(url, { cache: "no-store" })
+            .then(function (r) {
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              return r.json();
+            })
+            .then(function (gj) {
+              var set = {};
+              var list = [];
+              if (!gj || !gj.features) return [];
+              gj.features.forEach(function (f) {
+                var props = f.properties || {};
+                var name = matchName(props);
+                if (!name) return;
+                var n = String(name).trim();
+                if (n && !set[n.toLowerCase()]) {
+                  set[n.toLowerCase()] = true;
+                  list.push(n);
+                }
+              });
+              return list.sort(function (a, b) {
+                return a.localeCompare(b);
+              });
+            })
+            .catch(function () {
+              return [];
+            });
+        }
+
         function showSuggestions(arr) {
           if (!arr || arr.length === 0) {
             suggestionBox.style.display = "none";
@@ -335,7 +895,7 @@
               item.addEventListener("click", function () {
                 queryInput.value = text;
                 suggestionBox.style.display = "none";
-                suggestionBox.innerHTML = ""; // trigger search immediately
+                suggestionBox.innerHTML = "";
                 document.getElementById("btn_admin_search").click();
               });
             })(arr[i]);
@@ -347,33 +907,34 @@
         function updateSuggestionsForQuery(q) {
           var level = document.getElementById("search_admin_level").value;
           var key = keyForLevel(level);
-          // ensure layer loaded; if not, try to load silently then get names
-          var ensure = adminLayers[key]
-            ? Promise.resolve()
-            : loadAdminGeojson(key, urlForKey(key), level).catch(function () {
-                return Promise.resolve();
-              });
-          ensure.then(function () {
-            if (!adminLayers[key]) {
-              showSuggestions([]);
-              return;
-            }
-            getNamesFromLayer(key)
-              .then(function (list) {
-                if (!q) {
-                  showSuggestions(list.slice(0, 10));
-                  return;
-                }
-                var mq = q.toLowerCase();
-                var filtered = list.filter(function (s) {
-                  return s.toLowerCase().indexOf(mq) !== -1;
+          var promiseNames;
+          if (adminLayers[key]) promiseNames = getNamesFromLayer(key);
+          else
+            promiseNames = fetchNamesFromGeojson(urlForKey(key)).then(function (list) {
+              if (list.length) return list;
+              return loadAdminGeojson(key, urlForKey(key), level)
+                .then(function () {
+                  return getNamesFromLayer(key);
+                })
+                .catch(function () {
+                  return [];
                 });
-                showSuggestions(filtered);
-              })
-              .catch(function () {
-                showSuggestions([]);
+            });
+          promiseNames
+            .then(function (list) {
+              if (!q) {
+                showSuggestions(list.slice(0, 10));
+                return;
+              }
+              var mq = q.toLowerCase();
+              var filtered = list.filter(function (s) {
+                return s.toLowerCase().indexOf(mq) !== -1;
               });
-          });
+              showSuggestions(filtered);
+            })
+            .catch(function () {
+              showSuggestions([]);
+            });
         }
 
         var debouncedUpdate = debounce(function () {
@@ -383,7 +944,6 @@
         queryInput.addEventListener("focus", function () {
           debouncedUpdate();
         });
-        // hide suggestions on blur after a short timeout to allow click
         queryInput.addEventListener("blur", function () {
           setTimeout(function () {
             suggestionBox.style.display = "none";
@@ -391,7 +951,6 @@
         });
 
         var highlightLayer = null;
-
         function clearHighlight() {
           if (highlightLayer) {
             try {
@@ -399,35 +958,6 @@
             } catch (e) {}
             highlightLayer = null;
           }
-        }
-
-        function keyForLevel(level) {
-          switch (level) {
-            case "prov":
-              return "WADMPR";
-            case "kab":
-              return "WADMKK";
-            case "kec":
-              return "WADMKC";
-            case "desa":
-              return "WADMKD";
-            default:
-              return "WADMPR";
-          }
-        }
-
-        function urlForKey(key) {
-          return {
-            WADMPR: "data/WADMPR.geojson",
-            WADMKK: "data/WADMKK.geojson",
-            WADMKC: "data/WADMKC.geojson",
-            WADMKD: "data/WADMKD.geojson",
-          }[key];
-        }
-
-        function matchName(props) {
-          // return the most likely name field
-          return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "").toString();
         }
 
         function searchInLayer(key, q) {
@@ -474,9 +1004,8 @@
                     return { color: "#ff7800", weight: 4, fill: false };
                   },
                 }).addTo(map);
-                if (m.layer && m.layer.getBounds) {
-                  map.fitBounds(m.layer.getBounds(), { maxZoom: 13 });
-                } else if (m.feature && m.feature.geometry) {
+                if (m.layer && m.layer.getBounds) map.fitBounds(m.layer.getBounds(), { maxZoom: 13 });
+                else if (m.feature && m.feature.geometry) {
                   try {
                     var b = L.geoJSON(m.feature).getBounds();
                     map.fitBounds(b, { maxZoom: 13 });
@@ -491,7 +1020,7 @@
           });
         }
 
-        // Search button handler
+        // Search handler
         document.getElementById("btn_admin_search").addEventListener("click", function () {
           var level = document.getElementById("search_admin_level").value;
           var q = document.getElementById("search_admin_query").value.trim();
@@ -500,7 +1029,6 @@
             return;
           }
           var key = keyForLevel(level);
-          // ensure layer loaded (silent)
           if (!adminLayers[key]) {
             loadAdminGeojson(key, urlForKey(key), level)
               .then(function () {
