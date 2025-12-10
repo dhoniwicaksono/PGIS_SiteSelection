@@ -1059,8 +1059,8 @@
           // 4. Remove highlight (orange lines)
           clearHighlight();
 
-          // 5. Restore original admin layers
-          restoreAdminLayers();
+          // 5. REMOVE ALL ADMIN LAYERS completely (Fix: use hideAllAdminLayers instead of restore)
+          hideAllAdminLayers();
         }
 
         function showResultsList(matches) {
@@ -1141,7 +1141,9 @@
           restoreBtn.style.marginTop = "8px";
           restoreBtn.textContent = "Restore all administrative layers";
           restoreBtn.addEventListener("click", function () {
-            resetAdminView();
+            // Restore layers, but keep user context
+            clearHighlight();
+            restoreAdminLayers();
           });
           container.appendChild(restoreBtn);
         }
