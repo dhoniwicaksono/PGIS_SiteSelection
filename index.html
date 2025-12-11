@@ -19,7 +19,7 @@
         font-family: Arial, Helvetica, sans-serif;
       }
 
-      /* Left sidebar */
+      /* Left sidebar (Form) */
       #sidebar {
         position: absolute;
         top: 8px;
@@ -32,9 +32,10 @@
         width: 320px;
         max-height: 90vh;
         overflow: auto;
+        /* Default transition for opacity if needed, but display none is better for accessibility when hidden */
       }
 
-      /* Right sidebar */
+      /* Right sidebar (Tools & Layers) */
       #sidebarRight {
         position: absolute;
         top: 8px;
@@ -49,18 +50,65 @@
         overflow: auto;
       }
 
+      /* Mobile Navigation Bar (Hidden on Desktop) */
+      #mobile-nav {
+        display: none;
+      }
+
       @media (max-width: 700px) {
         #sidebar,
         #sidebarRight {
           position: fixed;
           left: 0;
           right: 0;
-          bottom: 0;
+          bottom: 50px; /* Beri ruang untuk nav bar bawah */
           top: auto;
           width: 100%;
           max-height: 45vh;
           border-radius: 12px 12px 0 0;
           padding: 10px 12px;
+          box-sizing: border-box;
+          /* Sembunyikan secara default di mobile, nanti di-toggle via JS */
+          display: none; 
+          z-index: 2000;
+        }
+
+        /* Class bantuan untuk menampilkan sidebar aktif di mobile */
+        .mobile-visible {
+          display: block !important;
+        }
+
+        /* Tampilkan Navigasi Bawah */
+        #mobile-nav {
+          display: flex;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 50px;
+          background: white;
+          border-top: 1px solid #ccc;
+          z-index: 3000;
+          justify-content: space-around;
+          align-items: center;
+          box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        
+        #mobile-nav button {
+          flex: 1;
+          height: 100%;
+          border: none;
+          background: #fff;
+          font-weight: 600;
+          color: #555;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        
+        #mobile-nav button.active {
+          color: #2c7be5;
+          border-top: 3px solid #2c7be5;
+          background: #f4f9ff;
         }
       }
 
@@ -204,7 +252,7 @@
   <body>
     <div id="map"></div>
 
-    <div id="sidebar">
+    <div id="sidebar" class="mobile-visible"> <!-- Default visible on mobile -->
       <h3 style="margin: 6px 0">Collector — Preference Mapping (MaxEnt)</h3>
       <div class="small">Klik peta untuk menambahkan titik. Isi atribut di form, lalu tekan <b>Save Point</b>. Minimal <b>10 titik</b> per responden direkomendasikan.</div>
 
@@ -327,8 +375,43 @@
       </div>
     </div>
 
+    <!-- NEW: Mobile Bottom Navigation -->
+    <div id="mobile-nav">
+      <button id="tab-form" class="active">Form Data</button>
+      <button id="tab-layers">Layers & Tools</button>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+      // --- Mobile Tab Switching Logic ---
+      (function() {
+        var tabForm = document.getElementById('tab-form');
+        var tabLayers = document.getElementById('tab-layers');
+        var sidebarLeft = document.getElementById('sidebar');
+        var sidebarRight = document.getElementById('sidebarRight');
+
+        function switchTab(target) {
+          // Remove active class from buttons
+          tabForm.classList.remove('active');
+          tabLayers.classList.remove('active');
+          
+          // Hide both sidebars (on mobile, handled by CSS class mobile-visible)
+          sidebarLeft.classList.remove('mobile-visible');
+          sidebarRight.classList.remove('mobile-visible');
+
+          if (target === 'form') {
+             tabForm.classList.add('active');
+             sidebarLeft.classList.add('mobile-visible');
+          } else {
+             tabLayers.classList.add('active');
+             sidebarRight.classList.add('mobile-visible');
+          }
+        }
+
+        tabForm.addEventListener('click', function() { switchTab('form'); });
+        tabLayers.addEventListener('click', function() { switchTab('layers'); });
+      })();
+
       // --- Map init ---
       var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" });
 
@@ -1355,7 +1438,11 @@
           }
         });
 
-        document.getElementById("btn_admin_clear").addEventListener("click", resetAdminView);
+        document.getElementById("btn_admin_clear").addEventListener("click", function () {
+          document.getElementById("search_admin_query").value = "";
+          document.getElementById("admin_search_results").innerHTML = "";
+          clearHighlight();
+        });
       })();
     </script>
   </body>
