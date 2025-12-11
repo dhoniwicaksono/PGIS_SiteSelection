@@ -32,7 +32,6 @@
         width: 320px;
         max-height: 90vh;
         overflow: auto;
-        /* Default transition for opacity if needed, but display none is better for accessibility when hidden */
       }
 
       /* Right sidebar (Tools & Layers) */
@@ -340,21 +339,92 @@
       
       <hr />
 
-      <!-- NEW: Layers Section -->
+      <!-- Layers Section -->
       <h3 style="margin: 6px 0">Layers</h3>
       <div style="margin-bottom: 12px;">
+        
+        <!-- SECTION 1: PEMERINTAHAN -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Pemerintahan</div>
         <label class="ctrl-label">
           <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan
         </label>
-        <!-- Legend for Gov Office -->
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display:none;">
           <div class="legend-item"><span class="legend-dot" style="background:#d32f2f"></span>Gubernur / DIY</div>
           <div class="legend-item"><span class="legend-dot" style="background:#f57c00"></span>Bupati / Walikota</div>
-          <!-- UPDATE LABEL LEGENDA -->
-          <div class="legend-item"><span class="legend-dot" style="background:#1976d2"></span>Kecamatan / Kemantren / Kapanewon</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#1976d2"></span>Kecamatan / Kapanewon</div>
           <div class="legend-item"><span class="legend-dot" style="background:#388e3c"></span>Kelurahan / Desa</div>
           <div class="legend-item"><span class="legend-dot" style="background:#757575"></span>Lainnya</div>
         </div>
+
+        <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
+        
+        <!-- SECTION 2: KESEHATAN -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Kesehatan</div>
+        
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_rs" /> Rumah Sakit
+        </label>
+        <div id="legend_rs" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#e91e63"></span>RS Umum (RSU)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#f48fb1"></span>RS Khusus/Lainnya</div>
+        </div>
+
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_puskesmas" /> Puskesmas
+        </label>
+        <div id="legend_puskesmas" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span>Puskesmas</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#81c784"></span>Pustu / Lainnya</div>
+        </div>
+
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_klinik" /> Klinik
+        </label>
+        <div id="legend_klinik" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#00bcd4"></span>Klinik Pratama</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#006064"></span>Klinik Utama</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#b2ebf2"></span>Klinik Umum / Lainnya</div>
+        </div>
+
+        <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
+
+        <!-- SECTION 3: PENDIDIKAN -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Pendidikan</div>
+
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_sekolah" /> Sekolah (SD/SMP/SMA)
+        </label>
+        <div id="legend_sekolah" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#fbc02d"></span>SD / Sederajat</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#2196f3"></span>SMP / Sederajat</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#9c27b0"></span>SMA / SMK</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#009688"></span>SLB / Lainnya</div>
+        </div>
+
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_kampus" /> Perguruan Tinggi
+        </label>
+        <div id="legend_kampus" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#3f51b5"></span>Universitas</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#e91e63"></span>Institut</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Sekolah Tinggi</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#4caf50"></span>Politeknik</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#00bcd4"></span>Akademi</div>
+        </div>
+
+        <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
+
+        <!-- SECTION 4: EKONOMI (NEW) -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Ekonomi</div>
+
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_pasar" /> Pasar Tradisional
+        </label>
+        <div id="legend_pasar" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#5d4037"></span>Pasar Harian</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ffa000"></span>Pasar Non Harian</div>
+        </div>
+
       </div>
 
       <hr />
@@ -375,7 +445,7 @@
       </div>
     </div>
 
-    <!-- NEW: Mobile Bottom Navigation -->
+    <!-- Mobile Bottom Navigation -->
     <div id="mobile-nav">
       <button id="tab-form" class="active">Form Data</button>
       <button id="tab-layers">Layers & Tools</button>
@@ -391,11 +461,8 @@
         var sidebarRight = document.getElementById('sidebarRight');
 
         function switchTab(target) {
-          // Remove active class from buttons
           tabForm.classList.remove('active');
           tabLayers.classList.remove('active');
-          
-          // Hide both sidebars (on mobile, handled by CSS class mobile-visible)
           sidebarLeft.classList.remove('mobile-visible');
           sidebarRight.classList.remove('mobile-visible');
 
@@ -407,7 +474,6 @@
              sidebarRight.classList.add('mobile-visible');
           }
         }
-
         tabForm.addEventListener('click', function() { switchTab('form'); });
         tabLayers.addEventListener('click', function() { switchTab('layers'); });
       })();
@@ -418,7 +484,7 @@
       var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
 	    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
       });
-
+      
       var OPNVKarte = L.tileLayer('https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: 'Map <a href="https://memomaps.de/">memomaps.de</a> <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -447,37 +513,39 @@
         });
       });
 
-      // --- LAYER KANTOR PEMERINTAHAN (Unique Symbol) ---
-      var govLayer = null;
-      var govLayerUrl = "TOPONIMI_KANTORPEMERINTAH_PT.geojson"; // Assuming root level upload
-
-      function getGovColor(kategori) {
-        if (!kategori) return "#757575";
-        var k = kategori.toLowerCase();
-        if (k.includes("gubernur") || k.includes("daerah istimewa")) return "#d32f2f"; // Merah
-        if (k.includes("bupati") || k.includes("walikota") || k.includes("kota")) return "#f57c00"; // Oranye
-        // UPDATE: Tambahkan 'kapanewon' di sini
-        if (k.includes("camat") || k.includes("kemantren") || k.includes("kapanewon")) return "#1976d2"; // Biru
-        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan")) return "#388e3c"; // Hijau
-        return "#757575"; // Abu-abu default
+      // --- COORDINATE CONVERTER (3857 to 4326) ---
+      function mercatorToLatLon(x, y) {
+        var rMajor = 6378137; // Equatorial Radius
+        var shift = Math.PI * rMajor;
+        var lon = x / shift * 180.0;
+        var lat = y / shift * 180.0;
+        lat = 180 / Math.PI * (2 * Math.atan(Math.exp(lat * Math.PI / 180.0)) - Math.PI / 2.0);
+        return [lat, lon];
       }
 
-      function loadGovLayer() {
-        if (govLayer) {
-           map.addLayer(govLayer);
-           return;
-        }
-        
-        // Try paths: root, then data/
-        var paths = [govLayerUrl, "data/" + govLayerUrl];
-        
-        var loadPromise = new Promise(function(resolve, reject) {
-            // Recursive fetch helper
+      // --- LAYERS CONFIG ---
+      // Layers: Kantor Pemerintah (Existing)
+      var govLayer = null;
+      var govLayerUrl = "TOPONIMI_KANTORPEMERINTAH_PT.geojson";
+
+      // Layers: Health (Existing)
+      var rsLayer = null; var rsUrl = "ONLINE_DINKES_RUMAHSAKIT_PT.geojson";
+      var puskesmasLayer = null; var puskesmasUrl = "ONLINE_DINKES_PUSKESMAS_PT.geojson";
+      var klinikLayer = null; var klinikUrl = "ONLINE_DINKES_KLINIK_PT.geojson";
+
+      // Layers: Education (Existing)
+      var sekolahLayer = null; var sekolahUrl = "ONLINE_DIKPORA_SEKOLAH_DASAR_MENENGAH_PT.geojson";
+      var kampusLayer = null; var kampusUrl = "ONLINE_AGOL_PENDIDIKANTINGGI_PT.geojson";
+
+      // Layers: Economy (New)
+      var pasarLayer = null; var pasarUrl = "ONLINE_DISPERINDAG_PASAR_PT.geojson";
+
+      // Helper: Load GeoJSON safely
+      function fetchGeoJSON(url) {
+        var paths = [url, "data/" + url];
+        return new Promise(function(resolve, reject) {
             function tryFetch(idx) {
-                if (idx >= paths.length) {
-                    reject("File not found");
-                    return;
-                }
+                if (idx >= paths.length) { reject("File not found"); return; }
                 fetch(paths[idx])
                 .then(function(r) { 
                     if (!r.ok) throw new Error("404");
@@ -488,45 +556,194 @@
             }
             tryFetch(0);
         });
+      }
 
-        loadPromise.then(function(data) {
+      // --- KANTOR PEMERINTAHAN LOGIC ---
+      function getGovColor(kategori) {
+        if (!kategori) return "#757575";
+        var k = kategori.toLowerCase();
+        if (k.includes("gubernur") || k.includes("daerah istimewa")) return "#d32f2f";
+        if (k.includes("bupati") || k.includes("walikota") || k.includes("kota")) return "#f57c00";
+        if (k.includes("camat") || k.includes("kemantren") || k.includes("kapanewon")) return "#1976d2";
+        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan")) return "#388e3c";
+        return "#757575";
+      }
+
+      function loadGovLayer() {
+        if (govLayer) { map.addLayer(govLayer); return; }
+        fetchGeoJSON(govLayerUrl).then(function(data) {
            govLayer = L.geoJSON(data, {
              pointToLayer: function(feature, latlng) {
                 var cat = feature.properties.kategori || "";
                 var color = getGovColor(cat);
-                return L.circleMarker(latlng, {
-                    radius: 6,
-                    fillColor: color,
-                    color: "#fff",
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.9
-                });
+                return L.circleMarker(latlng, { radius: 6, fillColor: color, color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.9 });
              },
              onEachFeature: function(feature, layer) {
                 var p = feature.properties;
-                var content = "<b>" + (p.namobj || "Kantor Pemerintah") + "</b><br/>";
-                content += "Kategori: " + (p.kategori || "-") + "<br/>";
-                if(p.metadata) content += "<i>" + p.metadata + "</i>";
-                layer.bindPopup(content);
+                layer.bindPopup("<b>" + (p.namobj || "Kantor") + "</b><br/>" + (p.kategori || "-"));
              }
            }).addTo(map);
         }).catch(function(err) {
-            console.error("Failed to load Gov Layer", err);
-            alert("Gagal memuat layer Kantor Pemerintahan. Pastikan file " + govLayerUrl + " telah diunggah.");
+            console.error("Failed Gov Layer", err);
             document.getElementById("layer_kantor_pemerintah").checked = false;
         });
       }
 
+      // --- GENERIC LAYER LOADER (Handles 3857) ---
+      function loadGenericLayer(type, url, colorFunc, layerVarSetter) {
+        fetchGeoJSON(url).then(function(data) {
+           var lyr = L.geoJSON(data, {
+             coordsToLatLng: function(coords) {
+                // Check if coords look like Mercator (large numbers > 180)
+                if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
+                    var latlon = mercatorToLatLon(coords[0], coords[1]);
+                    return new L.LatLng(latlon[0], latlon[1]);
+                }
+                return new L.LatLng(coords[1], coords[0]);
+             },
+             pointToLayer: function(feature, latlng) {
+                var ket = feature.properties.keterangan || "";
+                var color = colorFunc(ket);
+                return L.circleMarker(latlng, { radius: 5, fillColor: color, color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.9 });
+             },
+             onEachFeature: function(feature, layer) {
+                var p = feature.properties;
+                layer.bindPopup("<b>" + (p.namobj || type) + "</b><br/>Keterangan: " + (p.keterangan || "-"));
+             }
+           }).addTo(map);
+           layerVarSetter(lyr);
+        }).catch(function(err) {
+            console.error("Failed Layer: " + type, err);
+            alert("Gagal memuat layer " + type);
+        });
+      }
+
+      // --- COLOR FUNCTIONS FOR HEALTH ---
+      function getRSColor(ket) {
+        if (!ket) return "#f48fb1"; var k = ket.toLowerCase();
+        if (k.includes("rsu")) return "#e91e63"; return "#f48fb1";
+      }
+      function getPuskesmasColor(ket) {
+        if (!ket) return "#81c784"; var k = ket.toLowerCase();
+        if (k === "puskesmas") return "#2e7d32"; return "#81c784";
+      }
+      function getKlinikColor(ket) {
+        if (!ket) return "#b2ebf2"; var k = ket.toLowerCase();
+        if (k.includes("pratama")) return "#00bcd4"; if (k.includes("utama")) return "#006064"; return "#b2ebf2";
+      }
+
+      // --- COLOR FUNCTIONS FOR EDUCATION ---
+      function getSekolahColor(ket) {
+        if (!ket) return "#795548";
+        var k = ket.toLowerCase();
+        if (k.includes("sd") || k.includes("dasar")) return "#fbc02d";
+        if (k.includes("smp") || k.includes("pertama")) return "#2196f3";
+        if (k.includes("sma") || k.includes("smk") || k.includes("menengah")) return "#9c27b0";
+        if (k.includes("slb")) return "#009688";
+        return "#795548";
+      }
+      function getKampusColor(ket) {
+        if (!ket) return "#607d8b";
+        var k = ket.toLowerCase();
+        if (k.includes("universitas")) return "#3f51b5";
+        if (k.includes("institut")) return "#e91e63";
+        if (k.includes("sekolah tinggi")) return "#ff9800";
+        if (k.includes("politeknik")) return "#4caf50";
+        if (k.includes("akademi")) return "#00bcd4";
+        return "#607d8b";
+      }
+
+      // --- COLOR FUNCTIONS FOR ECONOMY (NEW) ---
+      function getPasarColor(ket) {
+        if (!ket) return "#5d4037"; // default dark brown
+        var k = ket.toLowerCase();
+        if (k.includes("non")) return "#ffa000"; // Amber for Non Harian
+        return "#5d4037"; // Dark Brown for Harian
+      }
+
+
+      // --- EVENT LISTENERS FOR LAYERS ---
+
+      // Kantor Pemerintah
       document.getElementById("layer_kantor_pemerintah").addEventListener("change", function(e) {
          var legend = document.getElementById("legend_kantor");
          if (e.target.checked) {
             loadGovLayer();
             if(legend) legend.style.display = "block";
          } else {
-            if (govLayer && map.hasLayer(govLayer)) {
-                map.removeLayer(govLayer);
-            }
+            if (govLayer && map.hasLayer(govLayer)) map.removeLayer(govLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+
+      // Health
+      document.getElementById("layer_rs").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_rs");
+         if (e.target.checked) {
+            if (rsLayer) map.addLayer(rsLayer);
+            else loadGenericLayer("Rumah Sakit", rsUrl, getRSColor, function(l){ rsLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (rsLayer && map.hasLayer(rsLayer)) map.removeLayer(rsLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+      document.getElementById("layer_puskesmas").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_puskesmas");
+         if (e.target.checked) {
+            if (puskesmasLayer) map.addLayer(puskesmasLayer);
+            else loadGenericLayer("Puskesmas", puskesmasUrl, getPuskesmasColor, function(l){ puskesmasLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (puskesmasLayer && map.hasLayer(puskesmasLayer)) map.removeLayer(puskesmasLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+      document.getElementById("layer_klinik").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_klinik");
+         if (e.target.checked) {
+            if (klinikLayer) map.addLayer(klinikLayer);
+            else loadGenericLayer("Klinik", klinikUrl, getKlinikColor, function(l){ klinikLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (klinikLayer && map.hasLayer(klinikLayer)) map.removeLayer(klinikLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+
+      // Education
+      document.getElementById("layer_sekolah").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_sekolah");
+         if (e.target.checked) {
+            if (sekolahLayer) map.addLayer(sekolahLayer);
+            else loadGenericLayer("Sekolah", sekolahUrl, getSekolahColor, function(l){ sekolahLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (sekolahLayer && map.hasLayer(sekolahLayer)) map.removeLayer(sekolahLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+      document.getElementById("layer_kampus").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_kampus");
+         if (e.target.checked) {
+            if (kampusLayer) map.addLayer(kampusLayer);
+            else loadGenericLayer("Kampus", kampusUrl, getKampusColor, function(l){ kampusLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (kampusLayer && map.hasLayer(kampusLayer)) map.removeLayer(kampusLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+
+      // Economy (New)
+      document.getElementById("layer_pasar").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_pasar");
+         if (e.target.checked) {
+            if (pasarLayer) map.addLayer(pasarLayer);
+            else loadGenericLayer("Pasar", pasarUrl, getPasarColor, function(l){ pasarLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (pasarLayer && map.hasLayer(pasarLayer)) map.removeLayer(pasarLayer);
             if(legend) legend.style.display = "none";
          }
       });
