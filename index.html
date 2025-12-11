@@ -39,6 +39,7 @@
         width: 320px;
         max-height: 90vh;
         overflow: auto;
+        transition: max-height 0.3s ease; /* Animasi halus saat minimize */
       }
 
       /* Right sidebar (Tools & Layers) */
@@ -54,10 +55,16 @@
         width: 320px;
         max-height: 90vh;
         overflow: auto;
+        transition: max-height 0.3s ease; /* Animasi halus saat minimize */
       }
 
       /* Mobile Navigation Bar (Hidden on Desktop) */
       #mobile-nav {
+        display: none;
+      }
+
+      /* Desktop: Hide minimize buttons */
+      .mobile-header-controls {
         display: none;
       }
 
@@ -70,13 +77,41 @@
           bottom: 50px; /* Beri ruang untuk nav bar bawah */
           top: auto;
           width: 100%;
-          max-height: 45vh;
+          max-height: 50vh; /* Default Expanded Height di Mobile */
           border-radius: 12px 12px 0 0;
           padding: 10px 12px;
           box-sizing: border-box;
           /* Sembunyikan secara default di mobile, nanti di-toggle via JS */
           display: none; 
           z-index: 2000;
+        }
+
+        /* Class untuk mode MINIMIZE di mobile */
+        .sidebar-minimized {
+          max-height: 50px !important; /* Hanya tampilkan header */
+          overflow: hidden !important;
+        }
+
+        /* Tampilkan tombol minimize di mobile */
+        .mobile-header-controls {
+          display: block;
+          float: right;
+          background: #f0f0f0;
+          border: none;
+          border-radius: 4px;
+          padding: 2px 8px;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        
+        /* Ubah tampilan header agar sejajar dengan tombol */
+        .sidebar-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+          border-bottom: 1px solid #eee;
+          padding-bottom: 5px;
         }
 
         /* Class bantuan untuk menampilkan sidebar aktif di mobile */
@@ -264,6 +299,8 @@
         font-size: 11px;
         font-weight: bold;
         color: #333;
+        /* Ensure text renders exactly as in data (no uppercase enforcement) */
+        text-transform: none !important;
         /* White Halo Text Shadow for readability on any background */
         text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff,
                      1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff;
@@ -283,7 +320,12 @@
     <div id="map"></div>
 
     <div id="sidebar" class="mobile-visible"> <!-- Default visible on mobile -->
-      <h3 style="margin: 6px 0">Collector — Preference Mapping (MaxEnt)</h3>
+      <!-- Header Row with Minimize Button -->
+      <div class="sidebar-header-row">
+        <h3 style="margin: 0">Collector</h3>
+        <button class="mobile-header-controls" onclick="toggleSidebarHeight('sidebar', this)">▼</button>
+      </div>
+
       <div class="small">Klik peta untuk menambahkan titik. Isi atribut di form, lalu tekan <b>Save Point</b>. Minimal <b>10 titik</b> per responden direkomendasikan.</div>
 
       <label>Respondent ID</label>
@@ -353,9 +395,14 @@
     </div>
 
     <div id="sidebarRight">
+      <!-- Header Row with Minimize Button -->
+      <div class="sidebar-header-row">
+        <h3 style="margin: 0">Peta & Layers</h3>
+        <button class="mobile-header-controls" onclick="toggleSidebarHeight('sidebarRight', this)">▼</button>
+      </div>
+
       <!-- Basemap Section -->
-      <h3 style="margin: 6px 0">Basemap</h3>
-      <div class="small" style="margin-bottom: 8px;">Pilih tampilan peta dasar.</div>
+      <h4 style="margin: 6px 0; font-size:14px; text-decoration: underline;">Basemap</h4>
       <div style="margin-bottom: 12px;">
         <label class="ctrl-label">
           <input type="radio" name="basemap_select" value="osm" checked /> OSM Standard
@@ -371,7 +418,7 @@
       <hr />
 
       <!-- Layers Section -->
-      <h3 style="margin: 6px 0">Layers</h3>
+      <h4 style="margin: 6px 0; font-size:14px; text-decoration: underline;">Layers</h4>
       <div style="margin-bottom: 12px;">
         
         <!-- SECTION 1: PEMERINTAHAN (Monochrome: Purple/Magenta Gradient) -->
@@ -485,6 +532,22 @@
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
     <script>
+      // --- Helper for Mobile Toggle ---
+      function toggleSidebarHeight(id, btn) {
+        var el = document.getElementById(id);
+        if(el.classList.contains('sidebar-minimized')) {
+           el.classList.remove('sidebar-minimized');
+           btn.innerHTML = '▼'; // Simbol Down Arrow (Expand)
+           btn.style.transform = 'rotate(0deg)';
+        } else {
+           el.classList.add('sidebar-minimized');
+           btn.innerHTML = '▲'; // Simbol Up Arrow (Minimize/Restore) - or keep Chevron and rotate via CSS
+           // Simple text change is easiest, or rotation:
+           btn.innerHTML = '▼';
+           btn.style.transform = 'rotate(180deg)';
+        }
+      }
+
       // --- Mobile Tab Switching Logic ---
       (function() {
         var tabForm = document.getElementById('tab-form');
@@ -497,6 +560,13 @@
           tabLayers.classList.remove('active');
           sidebarLeft.classList.remove('mobile-visible');
           sidebarRight.classList.remove('mobile-visible');
+          
+          // Reset minimize state when switching tabs for better UX
+          sidebarLeft.classList.remove('sidebar-minimized');
+          sidebarRight.classList.remove('sidebar-minimized');
+          // Reset rotation of buttons
+          var btns = document.querySelectorAll('.mobile-header-controls');
+          btns.forEach(function(b){ b.style.transform = 'rotate(0deg)'; });
 
           if (target === 'form') {
              tabForm.classList.add('active');
