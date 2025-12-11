@@ -94,18 +94,36 @@
         margin-top: 8px;
         font-weight: 600;
       }
-      /* Custom style for radio labels in sidebar */
-      .radio-label {
+      /* Custom style for radio/checkbox labels in sidebar */
+      .ctrl-label {
         display: flex;
         align-items: center;
-        margin-top: 4px; 
+        margin-top: 6px; 
         font-weight: normal; 
         cursor: pointer;
+        font-size: 14px;
       }
-      .radio-label input {
+      .ctrl-label input {
         width: auto;
         margin-top: 0;
         margin-right: 8px;
+        cursor: pointer;
+      }
+
+      /* Legend dot style */
+      .legend-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        margin-top: 4px;
+        color: #555;
       }
 
       input[type="text"],
@@ -257,21 +275,39 @@
     </div>
 
     <div id="sidebarRight">
-      <!-- Added Basemap Section Here -->
+      <!-- Basemap Section -->
       <h3 style="margin: 6px 0">Basemap</h3>
       <div class="small" style="margin-bottom: 8px;">Pilih tampilan peta dasar.</div>
       <div style="margin-bottom: 12px;">
-        <label class="radio-label">
+        <label class="ctrl-label">
           <input type="radio" name="basemap_select" value="osm" checked /> OSM Standard
         </label>
-        <label class="radio-label">
+        <label class="ctrl-label">
           <input type="radio" name="basemap_select" value="esri" /> Esri Satellite
         </label>
-        <label class="radio-label">
+        <label class="ctrl-label">
           <input type="radio" name="basemap_select" value="opnv" /> OPNVKarte (Transport)
         </label>
       </div>
       
+      <hr />
+
+      <!-- NEW: Layers Section -->
+      <h3 style="margin: 6px 0">Layers</h3>
+      <div style="margin-bottom: 12px;">
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan
+        </label>
+        <!-- Legend for Gov Office -->
+        <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#d32f2f"></span>Gubernur / DIY</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#f57c00"></span>Bupati / Walikota</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#1976d2"></span>Kecamatan / Kemantren</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#388e3c"></span>Kelurahan / Desa</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#757575"></span>Lainnya</div>
+        </div>
+      </div>
+
       <hr />
 
       <h3 style="margin: 6px 0">Tools</h3>
@@ -284,9 +320,10 @@
           <button id="zoomOutBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom Out</button>
         </div>
       </div>
-
-      <hr />
-      <div class="small">Gunakan <b>Get my location</b> untuk memusatkan peta pada posisi perangkat Anda dan menandainya.</div>
+      
+      <!-- Administrative Search -->
+      <div id="admin_search_container" style="margin-top: 12px; border-top: 1px solid #ddd; padding-top: 12px;">
+      </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -294,7 +331,6 @@
       // --- Map init ---
       var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" });
 
-      // FIX: Replaced Stadia with Esri World Imagery (No API Key required for demo)
       var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
 	    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
       });
@@ -309,17 +345,14 @@
       L.control.scale().addTo(map);
 
       // --- CUSTOM BASEMAP CONTROL LOGIC ---
-      // Listen to radio changes in the sidebar
       var basemapRadios = document.querySelectorAll('input[name="basemap_select"]');
       basemapRadios.forEach(function(radio) {
         radio.addEventListener('change', function(e) {
           var val = e.target.value;
-          // remove all known base layers first to ensure clean switch
           if (map.hasLayer(osm)) map.removeLayer(osm);
           if (map.hasLayer(Esri_WorldImagery)) map.removeLayer(Esri_WorldImagery);
           if (map.hasLayer(OPNVKarte)) map.removeLayer(OPNVKarte);
 
-          // add selected
           if (val === 'osm') {
              map.addLayer(osm);
           } else if (val === 'esri') {
@@ -329,6 +362,90 @@
           }
         });
       });
+
+      // --- LAYER KANTOR PEMERINTAHAN (Unique Symbol) ---
+      var govLayer = null;
+      var govLayerUrl = "TOPONIMI_KANTORPEMERINTAH_PT.geojson"; // Assuming root level upload
+
+      function getGovColor(kategori) {
+        if (!kategori) return "#757575";
+        var k = kategori.toLowerCase();
+        if (k.includes("gubernur") || k.includes("daerah istimewa")) return "#d32f2f"; // Merah
+        if (k.includes("bupati") || k.includes("walikota") || k.includes("kota")) return "#f57c00"; // Oranye
+        if (k.includes("camat") || k.includes("kemantren")) return "#1976d2"; // Biru
+        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan")) return "#388e3c"; // Hijau
+        return "#757575"; // Abu-abu default
+      }
+
+      function loadGovLayer() {
+        if (govLayer) {
+           map.addLayer(govLayer);
+           return;
+        }
+        
+        // Try paths: root, then data/
+        var paths = [govLayerUrl, "data/" + govLayerUrl];
+        
+        var loadPromise = new Promise(function(resolve, reject) {
+            // Recursive fetch helper
+            function tryFetch(idx) {
+                if (idx >= paths.length) {
+                    reject("File not found");
+                    return;
+                }
+                fetch(paths[idx])
+                .then(function(r) { 
+                    if (!r.ok) throw new Error("404");
+                    return r.json(); 
+                })
+                .then(function(data) { resolve(data); })
+                .catch(function() { tryFetch(idx + 1); });
+            }
+            tryFetch(0);
+        });
+
+        loadPromise.then(function(data) {
+           govLayer = L.geoJSON(data, {
+             pointToLayer: function(feature, latlng) {
+                var cat = feature.properties.kategori || "";
+                var color = getGovColor(cat);
+                return L.circleMarker(latlng, {
+                    radius: 6,
+                    fillColor: color,
+                    color: "#fff",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                });
+             },
+             onEachFeature: function(feature, layer) {
+                var p = feature.properties;
+                var content = "<b>" + (p.namobj || "Kantor Pemerintah") + "</b><br/>";
+                content += "Kategori: " + (p.kategori || "-") + "<br/>";
+                if(p.metadata) content += "<i>" + p.metadata + "</i>";
+                layer.bindPopup(content);
+             }
+           }).addTo(map);
+        }).catch(function(err) {
+            console.error("Failed to load Gov Layer", err);
+            alert("Gagal memuat layer Kantor Pemerintahan. Pastikan file " + govLayerUrl + " telah diunggah.");
+            document.getElementById("layer_kantor_pemerintah").checked = false;
+        });
+      }
+
+      document.getElementById("layer_kantor_pemerintah").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_kantor");
+         if (e.target.checked) {
+            loadGovLayer();
+            if(legend) legend.style.display = "block";
+         } else {
+            if (govLayer && map.hasLayer(govLayer)) {
+                map.removeLayer(govLayer);
+            }
+            if(legend) legend.style.display = "none";
+         }
+      });
+
 
       // --- State ---
       var allPoints = [];
@@ -853,8 +970,7 @@
 
       // build Search by Administrative UI (hidden layer controls)
       (function () {
-        var searchContainer = document.createElement("div");
-        searchContainer.style.marginTop = "12px";
+        var searchContainer = document.getElementById("admin_search_container");
         searchContainer.innerHTML =
           "<b>Search by Administrative</b><br/>" +
           '<label style="display:block;margin-top:6px; font-weight:600;">Level</label>' +
@@ -874,7 +990,6 @@
           '<button id="btn_admin_clear" class="btn secondary">Clear</button>' +
           "</div>" +
           '<div id="admin_search_results" style="margin-top:8px; max-height:200px; overflow:auto; font-size:13px"></div>';
-        document.getElementById("sidebarRight").appendChild(searchContainer);
 
         var suggestionBox = document.getElementById("admin_suggestions");
         var queryInput = document.getElementById("search_admin_query");
