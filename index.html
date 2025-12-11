@@ -160,10 +160,12 @@
       /* Legend dot style */
       .legend-dot {
         display: inline-block;
-        width: 10px;
-        height: 10px;
+        width: 12px; 
+        height: 12px;
         border-radius: 50%;
         margin-right: 6px;
+        border: 2px solid #fff; 
+        box-shadow: 0 0 2px rgba(0,0,0,0.2);
       }
       .legend-item {
         display: flex;
@@ -246,6 +248,28 @@
       #admin_suggestions div:hover {
         background: #f5f8ff;
       }
+
+      /* --- FEATURE LABELS (Zoom Dependent) --- */
+      .feature-label {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        font-size: 11px;
+        font-weight: bold;
+        color: #333;
+        /* White Halo Text Shadow for readability on any background */
+        text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff,
+                     1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff;
+        white-space: nowrap;
+        display: none; /* Hidden by default */
+        pointer-events: none;
+      }
+      
+      /* Only show labels when 'show-labels' class is added to map container */
+      .show-labels .feature-label {
+        display: block !important;
+      }
+
     </style>
   </head>
   <body>
@@ -343,87 +367,82 @@
       <h3 style="margin: 6px 0">Layers</h3>
       <div style="margin-bottom: 12px;">
         
-        <!-- SECTION 1: PEMERINTAHAN -->
-        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Pemerintahan</div>
+        <!-- SECTION 1: PEMERINTAHAN (Monochrome: Purple/Magenta Gradient) -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Pemerintahan (Ungu/Magenta)</div>
         <label class="ctrl-label">
           <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan
         </label>
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#d32f2f"></span>Gubernur / DIY</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#f57c00"></span>Bupati / Walikota</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#1976d2"></span>Kecamatan / Kapanewon</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#388e3c"></span>Kelurahan / Desa</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#757575"></span>Lainnya</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#4a148c"></span>Gubernur / DIY (Gelap)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#7b1fa2"></span>Bupati / Walikota</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ab47bc"></span>Kecamatan</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#e1bee7"></span>Kelurahan / Desa (Terang)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#f3e5f5"></span>Lainnya</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
         
-        <!-- SECTION 2: KESEHATAN -->
-        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Kesehatan</div>
+        <!-- SECTION 2: KESEHATAN (Monochrome: Green Gradient) -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Kesehatan (Hijau)</div>
         
         <label class="ctrl-label">
           <input type="checkbox" id="layer_rs" /> Rumah Sakit
         </label>
         <div id="legend_rs" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#e91e63"></span>RS Umum (RSU)</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#f48fb1"></span>RS Khusus/Lainnya</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#1b5e20"></span>RS Umum (Sangat Gelap)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span>RS Khusus/Lainnya</div>
         </div>
 
         <label class="ctrl-label">
           <input type="checkbox" id="layer_puskesmas" /> Puskesmas
         </label>
         <div id="legend_puskesmas" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span>Puskesmas</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#81c784"></span>Pustu / Lainnya</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#43a047"></span>Puskesmas (Sedang)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#66bb6a"></span>Pustu / Lainnya</div>
         </div>
 
         <label class="ctrl-label">
           <input type="checkbox" id="layer_klinik" /> Klinik
         </label>
-        <!-- UPDATED LEGEND FOR KLINIK (CONTRAST) -->
         <div id="legend_klinik" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#1565c0"></span>Klinik Umum</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#ff9100"></span>Klinik Gigi</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#37474f"></span>Lainnya</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#a5d6a7"></span>Klinik Umum (Terang)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#c8e6c9"></span>Klinik Gigi/Lainnya</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
 
-        <!-- SECTION 3: PENDIDIKAN -->
-        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Pendidikan</div>
+        <!-- SECTION 3: PENDIDIKAN (Monochrome: Blue/Cyan Gradient) -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Pendidikan (Biru)</div>
 
         <label class="ctrl-label">
           <input type="checkbox" id="layer_sekolah" /> Sekolah (SD/SMP/SMA)
         </label>
         <div id="legend_sekolah" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#fbc02d"></span>SD / Sederajat</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#2196f3"></span>SMP / Sederajat</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#9c27b0"></span>SMA / SMK</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#009688"></span>SLB / Lainnya</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#0277bd"></span>SMA / SMK (Gelap)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#29b6f6"></span>SMP / Sederajat</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#81d4fa"></span>SD / Sederajat (Terang)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#e1f5fe"></span>SLB / Lainnya</div>
         </div>
 
         <label class="ctrl-label">
           <input type="checkbox" id="layer_kampus" /> Perguruan Tinggi
         </label>
         <div id="legend_kampus" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#3f51b5"></span>Universitas</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#e91e63"></span>Institut</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Sekolah Tinggi</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#4caf50"></span>Politeknik</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#00bcd4"></span>Akademi</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#01579b"></span>Universitas (Sangat Gelap)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#0288d1"></span>Institut/Poltek</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
 
-        <!-- SECTION 4: EKONOMI (NEW) -->
-        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Ekonomi</div>
+        <!-- SECTION 4: EKONOMI (Monochrome: Orange/Amber Gradient) -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Ekonomi (Oranye)</div>
 
         <label class="ctrl-label">
           <input type="checkbox" id="layer_pasar" /> Pasar Tradisional
         </label>
         <div id="legend_pasar" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#5d4037"></span>Pasar Harian</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#ffa000"></span>Pasar Non Harian</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#e65100"></span>Pasar Harian (Gelap)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Pasar Non Harian (Terang)</div>
         </div>
 
       </div>
@@ -495,6 +514,22 @@
       var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm] });
       L.control.scale().addTo(map);
 
+      // --- ZOOM DEPENDENT LABELS LOGIC ---
+      function checkZoomForLabels() {
+        var z = map.getZoom();
+        var container = map.getContainer();
+        if (z >= 17) {
+          container.classList.add('show-labels');
+        } else {
+          container.classList.remove('show-labels');
+        }
+      }
+      // Listener
+      map.on('zoomend', checkZoomForLabels);
+      // Initial check
+      checkZoomForLabels();
+
+
       // --- CUSTOM BASEMAP CONTROL LOGIC ---
       var basemapRadios = document.querySelectorAll('input[name="basemap_select"]');
       basemapRadios.forEach(function(radio) {
@@ -559,16 +594,77 @@
         });
       }
 
-      // --- KANTOR PEMERINTAHAN LOGIC ---
+      // --- THEME COLOR FUNCTIONS (Monochromatic Gradient) ---
+      
+      // 1. PEMERINTAHAN (Ungu/Magenta) - Hierarchy: Governor > Mayor > District > Village
       function getGovColor(kategori) {
-        if (!kategori) return "#757575";
+        if (!kategori) return "#9e9e9e"; // Default Grey
         var k = kategori.toLowerCase();
-        if (k.includes("gubernur") || k.includes("daerah istimewa")) return "#d32f2f";
-        if (k.includes("bupati") || k.includes("walikota") || k.includes("kota")) return "#f57c00";
-        if (k.includes("camat") || k.includes("kemantren") || k.includes("kapanewon")) return "#1976d2";
-        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan")) return "#388e3c";
-        return "#757575";
+        if (k.includes("gubernur") || k.includes("daerah istimewa")) return "#4a148c"; // Deepest Purple
+        if (k.includes("bupati") || k.includes("walikota") || k.includes("kota")) return "#7b1fa2"; // Deep Purple
+        if (k.includes("camat") || k.includes("kemantren") || k.includes("kapanewon")) return "#ab47bc"; // Medium Purple
+        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan")) return "#e1bee7"; // Light Purple
+        return "#f3e5f5"; // Very Light Purple
       }
+
+      // 2. KESEHATAN (Hijau) - Hierarchy: RS > Puskesmas > Klinik
+      function getRSColor(ket) {
+        // RS is top tier
+        if (!ket) return "#2e7d32"; 
+        var k = ket.toLowerCase();
+        if (k.includes("rsu")) return "#1b5e20"; // Darkest Green
+        return "#2e7d32"; // Dark Green
+      }
+      function getPuskesmasColor(ket) {
+        // Puskesmas is middle tier
+        if (!ket) return "#66bb6a"; 
+        var k = ket.toLowerCase();
+        if (k === "puskesmas") return "#43a047"; // Medium Green
+        return "#66bb6a"; // Light Medium Green
+      }
+      function getKlinikColor(ket) {
+        // Klinik is lower tier (local)
+        if (!ket) return "#c8e6c9"; 
+        var k = ket.toLowerCase();
+        if (k.includes("umum")) return "#a5d6a7"; // Light Green
+        return "#c8e6c9"; // Very Light Green
+      }
+
+      // 3. PENDIDIKAN (Biru) - Hierarchy: Univ > SMA > SMP > SD
+      function getSekolahColor(ket) {
+        if (!ket) return "#e1f5fe";
+        var k = ket.toLowerCase();
+        if (k.includes("sma") || k.includes("smk") || k.includes("menengah")) return "#0277bd"; // Medium-Dark Blue
+        if (k.includes("smp") || k.includes("pertama")) return "#29b6f6"; // Light Blue
+        if (k.includes("sd") || k.includes("dasar")) return "#81d4fa"; // Pale Blue
+        return "#e1f5fe"; // Very Pale Blue
+      }
+      function getKampusColor(ket) {
+        if (!ket) return "#0288d1";
+        var k = ket.toLowerCase();
+        if (k.includes("universitas")) return "#01579b"; // Darkest Blue (Highest Ed)
+        return "#0288d1"; // Dark Blue
+      }
+
+      // 4. EKONOMI (Oranye/Emas) - Hierarchy: Harian > Non Harian
+      function getPasarColor(ket) {
+        if (!ket) return "#ff9800";
+        var k = ket.toLowerCase();
+        if (k.includes("non")) return "#ff9800"; // Orange
+        return "#e65100"; // Deep Orange/Darkest
+      }
+
+
+      // --- LOADING FUNCTIONS (With Proportional Outline) ---
+      
+      // Common style for markers: White outline to pop on all basemaps
+      var markerOptions = {
+        radius: 6,
+        color: "#ffffff", // WHITE OUTLINE
+        weight: 2.0,      // THICKER OUTLINE for visibility
+        opacity: 1,
+        fillOpacity: 0.9
+      };
 
       function loadGovLayer() {
         if (govLayer) { map.addLayer(govLayer); return; }
@@ -577,11 +673,15 @@
              pointToLayer: function(feature, latlng) {
                 var cat = feature.properties.kategori || "";
                 var color = getGovColor(cat);
-                return L.circleMarker(latlng, { radius: 6, fillColor: color, color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.9 });
+                return L.circleMarker(latlng, { ...markerOptions, fillColor: color });
              },
              onEachFeature: function(feature, layer) {
                 var p = feature.properties;
                 layer.bindPopup("<b>" + (p.namobj || "Kantor") + "</b><br/>" + (p.kategori || "-"));
+                // Bind Permanent Tooltip for Zoom >= 17
+                if (p.namobj) {
+                  layer.bindTooltip(p.namobj, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
+                }
              }
            }).addTo(map);
         }).catch(function(err) {
@@ -590,12 +690,11 @@
         });
       }
 
-      // --- GENERIC LAYER LOADER (Handles 3857) ---
+      // Generic Loader
       function loadGenericLayer(type, url, colorFunc, layerVarSetter) {
         fetchGeoJSON(url).then(function(data) {
            var lyr = L.geoJSON(data, {
              coordsToLatLng: function(coords) {
-                // Check if coords look like Mercator (large numbers > 180)
                 if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
                     var latlon = mercatorToLatLon(coords[0], coords[1]);
                     return new L.LatLng(latlon[0], latlon[1]);
@@ -605,11 +704,18 @@
              pointToLayer: function(feature, latlng) {
                 var ket = feature.properties.keterangan || "";
                 var color = colorFunc(ket);
-                return L.circleMarker(latlng, { radius: 5, fillColor: color, color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.9 });
+                // Use spread syntax or Object.assign to merge style
+                var style = Object.assign({}, markerOptions);
+                style.fillColor = color;
+                return L.circleMarker(latlng, style);
              },
              onEachFeature: function(feature, layer) {
                 var p = feature.properties;
                 layer.bindPopup("<b>" + (p.namobj || type) + "</b><br/>Keterangan: " + (p.keterangan || "-"));
+                // Bind Permanent Tooltip for Zoom >= 17
+                if (p.namobj) {
+                  layer.bindTooltip(p.namobj, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
+                }
              }
            }).addTo(map);
            layerVarSetter(lyr);
@@ -617,54 +723,6 @@
             console.error("Failed Layer: " + type, err);
             alert("Gagal memuat layer " + type);
         });
-      }
-
-      // --- COLOR FUNCTIONS FOR HEALTH ---
-      function getRSColor(ket) {
-        if (!ket) return "#f48fb1"; var k = ket.toLowerCase();
-        if (k.includes("rsu")) return "#e91e63"; return "#f48fb1";
-      }
-      function getPuskesmasColor(ket) {
-        if (!ket) return "#81c784"; var k = ket.toLowerCase();
-        if (k === "puskesmas") return "#2e7d32"; return "#81c784";
-      }
-      
-      // UPDATED COLOR FUNCTION FOR KLINIK (CONTRAST)
-      function getKlinikColor(ket) {
-        if (!ket) return "#37474f"; // Dark Gray default
-        var k = ket.toLowerCase();
-        if (k.includes("gigi")) return "#ff9100"; // Orange (High Contrast)
-        if (k.includes("umum")) return "#1565c0"; // Blue (Darker Blue)
-        return "#37474f"; // Dark Gray
-      }
-
-      // --- COLOR FUNCTIONS FOR EDUCATION ---
-      function getSekolahColor(ket) {
-        if (!ket) return "#795548";
-        var k = ket.toLowerCase();
-        if (k.includes("sd") || k.includes("dasar")) return "#fbc02d";
-        if (k.includes("smp") || k.includes("pertama")) return "#2196f3";
-        if (k.includes("sma") || k.includes("smk") || k.includes("menengah")) return "#9c27b0";
-        if (k.includes("slb")) return "#009688";
-        return "#795548";
-      }
-      function getKampusColor(ket) {
-        if (!ket) return "#607d8b";
-        var k = ket.toLowerCase();
-        if (k.includes("universitas")) return "#3f51b5";
-        if (k.includes("institut")) return "#e91e63";
-        if (k.includes("sekolah tinggi")) return "#ff9800";
-        if (k.includes("politeknik")) return "#4caf50";
-        if (k.includes("akademi")) return "#00bcd4";
-        return "#607d8b";
-      }
-
-      // --- COLOR FUNCTIONS FOR ECONOMY ---
-      function getPasarColor(ket) {
-        if (!ket) return "#5d4037"; // default dark brown
-        var k = ket.toLowerCase();
-        if (k.includes("non")) return "#ffa000"; // Amber for Non Harian
-        return "#5d4037"; // Dark Brown for Harian
       }
 
 
