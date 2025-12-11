@@ -380,10 +380,11 @@
         <label class="ctrl-label">
           <input type="checkbox" id="layer_klinik" /> Klinik
         </label>
+        <!-- UPDATED LEGEND FOR KLINIK (CONTRAST) -->
         <div id="legend_klinik" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#00bcd4"></span>Klinik Pratama</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#006064"></span>Klinik Utama</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#b2ebf2"></span>Klinik Umum / Lainnya</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#1565c0"></span>Klinik Umum</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ff9100"></span>Klinik Gigi</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#37474f"></span>Lainnya</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
@@ -627,9 +628,14 @@
         if (!ket) return "#81c784"; var k = ket.toLowerCase();
         if (k === "puskesmas") return "#2e7d32"; return "#81c784";
       }
+      
+      // UPDATED COLOR FUNCTION FOR KLINIK (CONTRAST)
       function getKlinikColor(ket) {
-        if (!ket) return "#b2ebf2"; var k = ket.toLowerCase();
-        if (k.includes("pratama")) return "#00bcd4"; if (k.includes("utama")) return "#006064"; return "#b2ebf2";
+        if (!ket) return "#37474f"; // Dark Gray default
+        var k = ket.toLowerCase();
+        if (k.includes("gigi")) return "#ff9100"; // Orange (High Contrast)
+        if (k.includes("umum")) return "#1565c0"; // Blue (Darker Blue)
+        return "#37474f"; // Dark Gray
       }
 
       // --- COLOR FUNCTIONS FOR EDUCATION ---
@@ -653,7 +659,7 @@
         return "#607d8b";
       }
 
-      // --- COLOR FUNCTIONS FOR ECONOMY (NEW) ---
+      // --- COLOR FUNCTIONS FOR ECONOMY ---
       function getPasarColor(ket) {
         if (!ket) return "#5d4037"; // default dark brown
         var k = ket.toLowerCase();
@@ -735,7 +741,7 @@
          }
       });
 
-      // Economy (New)
+      // Economy
       document.getElementById("layer_pasar").addEventListener("change", function(e) {
          var legend = document.getElementById("legend_pasar");
          if (e.target.checked) {
