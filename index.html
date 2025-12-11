@@ -68,13 +68,7 @@
         display: none;
       }
 
-      /* BREAKPOINT UPDATE: 
-         Ubah dari 700px ke 1024px.
-         Ini akan mencakup:
-         - Semua HP (Portrait/Landscape)
-         - iPad/Tablet (Portrait ~768px)
-         - iPad/Tablet (Landscape ~1024px)
-      */
+      /* BREAKPOINT UPDATE: 1024px for Tablet support */
       @media (max-width: 1024px) {
         #sidebar,
         #sidebarRight {
@@ -497,8 +491,8 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
 
-        <!-- SECTION 4: EKONOMI (Monochrome: Orange/Amber Gradient) -->
-        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Ekonomi (Oranye)</div>
+        <!-- SECTION 4: EKONOMI (Monochrome: Orange/Brown Gradient) -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Fasilitas Ekonomi (Oranye/Cokelat)</div>
 
         <label class="ctrl-label">
           <input type="checkbox" id="layer_pasar" /> Pasar Tradisional
@@ -506,6 +500,31 @@
         <div id="legend_pasar" style="margin-left: 24px; margin-top: 4px; display:none;">
           <div class="legend-item"><span class="legend-dot" style="background:#e65100"></span>Pasar Harian (Gelap)</div>
           <div class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Pasar Non Harian (Terang)</div>
+        </div>
+
+        <!-- NEW: Industri Layer (Brown/Bronze Theme) -->
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_ibm" /> Industri (IBM)
+        </label>
+        <div id="legend_ibm" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#5D4037"></span>Food & Beverages (Tua)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#8D6E63"></span>Craft / Textile</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#A1887F"></span>Others (Muda)</div>
+        </div>
+
+        <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
+
+        <!-- NEW SECTION 5: PARIWISATA (Monochrome: Pink/Magenta Gradient) -->
+        <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Pariwisata (Pink)</div>
+        
+        <label class="ctrl-label">
+          <input type="checkbox" id="layer_dtw" /> Objek Wisata (DTW)
+        </label>
+        <div id="legend_dtw" style="margin-left: 24px; margin-top: 4px; display:none;">
+          <div class="legend-item"><span class="legend-dot" style="background:#880E4F"></span>Wisata Alam (Gelap)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#C2185B"></span>Wisata Bahari/Pantai</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#E91E63"></span>Wisata Budaya</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#F06292"></span>Desa Wisata (Terang)</div>
         </div>
 
       </div>
@@ -663,8 +682,12 @@
       var sekolahLayer = null; var sekolahUrl = "ONLINE_DIKPORA_SEKOLAH_DASAR_MENENGAH_PT.geojson";
       var kampusLayer = null; var kampusUrl = "ONLINE_AGOL_PENDIDIKANTINGGI_PT.geojson";
 
-      // Layers: Economy (New)
+      // Layers: Economy (Existing + New IBM)
       var pasarLayer = null; var pasarUrl = "ONLINE_DISPERINDAG_PASAR_PT.geojson";
+      var ibmLayer = null; var ibmUrl = "ONLINE_DISPERINDAG_IBM_2024_PT.geojson"; // NEW
+
+      // Layers: Tourism (New)
+      var dtwLayer = null; var dtwUrl = "ONLINE_DISPAR_KUNJUNGAN_DTW_2024_PT.geojson"; // NEW
 
       // Helper: Load GeoJSON safely
       function fetchGeoJSON(url) {
@@ -742,6 +765,29 @@
         var k = ket.toLowerCase();
         if (k.includes("non")) return "#ff9800"; // Orange
         return "#e65100"; // Deep Orange/Darkest
+      }
+
+      // NEW: INDUSTRI (Brown/Bronze Theme)
+      function getIbmColor(ket) {
+        if (!ket) return "#8D6E63";
+        var k = ket.toLowerCase();
+        // Based on user data snippet: "Food_Beverages", "Others"
+        if (k.includes("food") || k.includes("makan") || k.includes("minum")) return "#5D4037"; // Dark Brown (Food)
+        if (k.includes("textile") || k.includes("kain") || k.includes("sandang")) return "#795548"; // Medium Brown
+        if (k.includes("craft") || k.includes("rajin")) return "#8D6E63"; // Bronze
+        return "#A1887F"; // Lighter Brown (Others)
+      }
+
+      // NEW: PARIWISATA (Pink/Magenta Theme)
+      function getDtwColor(ket) {
+        if (!ket) return "#E91E63";
+        var k = ket.toLowerCase();
+        // Based on user data snippet: "Wisata Alam", "Obyek Wisata Bahari", "Desa Wisata"
+        if (k.includes("alam")) return "#880E4F"; // Deep Pink (Nature)
+        if (k.includes("bahari") || k.includes("pantai") || k.includes("laut")) return "#C2185B"; // Strong Pink (Sea)
+        if (k.includes("budaya") || k.includes("religi") || k.includes("sejarah")) return "#E91E63"; // Pink
+        if (k.includes("desa") || k.includes("kampung")) return "#F06292"; // Light Pink (Village)
+        return "#F8BBD0"; // Pale Pink
       }
 
 
@@ -977,6 +1023,32 @@
             if(legend) legend.style.display = "block";
          } else {
             if (pasarLayer && map.hasLayer(pasarLayer)) map.removeLayer(pasarLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+
+      // NEW LISTENER: IBM (Industri)
+      document.getElementById("layer_ibm").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_ibm");
+         if (e.target.checked) {
+            if (ibmLayer) map.addLayer(ibmLayer);
+            else loadGenericLayer("Industri", ibmUrl, getIbmColor, function(l){ ibmLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (ibmLayer && map.hasLayer(ibmLayer)) map.removeLayer(ibmLayer);
+            if(legend) legend.style.display = "none";
+         }
+      });
+
+      // NEW LISTENER: DTW (Pariwisata)
+      document.getElementById("layer_dtw").addEventListener("change", function(e) {
+         var legend = document.getElementById("legend_dtw");
+         if (e.target.checked) {
+            if (dtwLayer) map.addLayer(dtwLayer);
+            else loadGenericLayer("Objek Wisata", dtwUrl, getDtwColor, function(l){ dtwLayer = l; });
+            if(legend) legend.style.display = "block";
+         } else {
+            if (dtwLayer && map.hasLayer(dtwLayer)) map.removeLayer(dtwLayer);
             if(legend) legend.style.display = "none";
          }
       });
