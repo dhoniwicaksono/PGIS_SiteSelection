@@ -502,19 +502,24 @@
           <div class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Pasar Non Harian (Terang)</div>
         </div>
 
-        <!-- NEW: Industri Layer (Brown/Bronze Theme) -->
+        <!-- NEW: Industri Layer (Brown/Bronze Theme - Expanded) -->
         <label class="ctrl-label">
           <input type="checkbox" id="layer_ibm" /> Industri (IBM)
         </label>
         <div id="legend_ibm" style="margin-left: 24px; margin-top: 4px; display:none;">
-          <div class="legend-item"><span class="legend-dot" style="background:#5D4037"></span>Food & Beverages (Tua)</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#8D6E63"></span>Craft / Textile</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#A1887F"></span>Others (Muda)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#3E2723"></span>Food & Beverages (Tua)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#5D4037"></span>Textile / Leather</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#795548"></span>Wood / Furniture</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#8D6E63"></span>Paper / Printing</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#A1887F"></span>Chemical / Building Mat</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#4E342E"></span>Metal / Machine</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#D7CCC8"></span>Craft</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#BCAAA4"></span>Others</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0;" />
 
-        <!-- NEW SECTION 5: PARIWISATA (Monochrome: Pink/Magenta Gradient) -->
+        <!-- SECTION 5: PARIWISATA (Monochrome: Pink/Magenta Gradient) -->
         <div style="font-weight:bold; margin-bottom:4px; font-size:13px; color:#333;">Pariwisata (Pink)</div>
         
         <label class="ctrl-label">
@@ -767,15 +772,34 @@
         return "#e65100"; // Deep Orange/Darkest
       }
 
-      // NEW: INDUSTRI (Brown/Bronze Theme)
+      // NEW: INDUSTRI (Brown/Bronze Theme - Expanded)
       function getIbmColor(ket) {
-        if (!ket) return "#8D6E63";
+        if (!ket) return "#BCAAA4";
         var k = ket.toLowerCase();
-        // Based on user data snippet: "Food_Beverages", "Others"
-        if (k.includes("food") || k.includes("makan") || k.includes("minum")) return "#5D4037"; // Dark Brown (Food)
-        if (k.includes("textile") || k.includes("kain") || k.includes("sandang")) return "#795548"; // Medium Brown
-        if (k.includes("craft") || k.includes("rajin")) return "#8D6E63"; // Bronze
-        return "#A1887F"; // Lighter Brown (Others)
+        
+        // 1. Food & Beverages
+        if (k.includes("food") || k.includes("beverage") || k.includes("makan") || k.includes("minum")) return "#3E2723"; // Very Dark Brown
+        
+        // 2. Textile, Leather, Footwear
+        if (k.includes("textile") || k.includes("leather") || k.includes("footwear") || k.includes("tekstil") || k.includes("kulit") || k.includes("alas kaki")) return "#5D4037"; // Dark Brown
+        
+        // 3. Wood, Rattan, Furniture
+        if (k.includes("wood") || k.includes("rattan") || k.includes("furniture") || k.includes("kayu") || k.includes("mebel")) return "#795548"; // Medium Brown
+        
+        // 4. Paper, Printing
+        if (k.includes("paper") || k.includes("printing") || k.includes("publishing") || k.includes("kertas") || k.includes("cetak")) return "#8D6E63"; // Bronze
+        
+        // 5. Chemical, Rubber, Plastic, Building Material
+        if (k.includes("chemical") || k.includes("rubber") || k.includes("plastic") || k.includes("building") || k.includes("kimia") || k.includes("plastik")) return "#A1887F"; // Light Brown
+        
+        // 6. Metal, Machinery, Electronics
+        if (k.includes("metal") || k.includes("machine") || k.includes("electronic") || k.includes("logam") || k.includes("mesin")) return "#4E342E"; // Dark Greyish Brown
+        
+        // 7. Craft
+        if (k.includes("craft") || k.includes("kerajinan")) return "#D7CCC8"; // Pale Brown/Beige
+
+        // 8. Others
+        return "#BCAAA4"; // Greyish Brown
       }
 
       // NEW: PARIWISATA (Pink/Magenta Theme)
