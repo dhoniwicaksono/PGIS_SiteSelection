@@ -4,7 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WebGIS Prototype — Collect Points & Export CSV</title>
+    
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+
     <style>
       html,
       body {
@@ -416,6 +423,8 @@
 
         <label class="ctrl-label">
           <input type="checkbox" id="layer_sekolah" /> Sekolah (SD/SMP/SMA)
+          <!-- Added Badge for Cluster -->
+          <span style="font-size:10px; background:#eee; padding:1px 3px; border-radius:3px; margin-left:4px; border:1px solid #ccc;">Cluster (Linear)</span>
         </label>
         <div id="legend_sekolah" style="margin-left: 24px; margin-top: 4px; display:none;">
           <div class="legend-item"><span class="legend-dot" style="background:#0277bd"></span>SMA / SMK (Gelap)</div>
@@ -472,6 +481,9 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
     <script>
       // --- Mobile Tab Switching Logic ---
       (function() {
@@ -511,7 +523,7 @@
       });
 
       // Default map with OSM
-      // UPDATED: Added preferCanvas: true to optimize rendering for large datasets (e.g. 4500+ schools)
+      // Keep preferCanvas true, it helps rendering markers inside the cluster too
       var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm], preferCanvas: true });
       L.control.scale().addTo(map);
 
@@ -726,6 +738,78 @@
         });
       }
 
+      // --- CUSTOM CLUSTER LOADER FOR SEKOLAH ---
+      // We implement the specific spiderfyShapePositions function requested by user here.
+      var sekolahCluster = null;
+
+      function loadSekolahCluster() {
+        if (sekolahCluster) {
+            map.addLayer(sekolahCluster);
+            return;
+        }
+        
+        // Define the custom cluster group with the requested spiderfy logic
+        sekolahCluster = L.markerClusterGroup({
+            spiderfyShapePositions: function(count, centerPt) {
+                var distanceFromCenter = 35,
+                    markerDistance = 45,
+                    lineLength = markerDistance * (count - 1),
+                    lineStart = centerPt.y - lineLength / 2,
+                    res = [],
+                    i;
+
+                res.length = count;
+
+                for (i = count - 1; i >= 0; i--) {
+                    // Note: User snippet used 'new Point'. In Leaflet context it is 'new L.Point'.
+                    res[i] = new L.Point(centerPt.x + distanceFromCenter, lineStart + markerDistance * i);
+                }
+
+                return res;
+            },
+            // Disable default spiderfy animation to make the linear effect clearer or customize as needed
+            // showCoverageOnHover: false,
+            // zoomToBoundsOnClick: true
+        });
+
+        fetchGeoJSON(sekolahUrl).then(function(data) {
+           var geoJsonLayer = L.geoJSON(data, {
+             coordsToLatLng: function(coords) {
+                if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
+                    var latlon = mercatorToLatLon(coords[0], coords[1]);
+                    return new L.LatLng(latlon[0], latlon[1]);
+                }
+                return new L.LatLng(coords[1], coords[0]);
+             },
+             pointToLayer: function(feature, latlng) {
+                var ket = feature.properties.keterangan || "";
+                var color = getSekolahColor(ket);
+                var style = Object.assign({}, markerOptions);
+                style.fillColor = color;
+                return L.circleMarker(latlng, style);
+             },
+             onEachFeature: function(feature, layer) {
+                var p = feature.properties;
+                layer.bindPopup("<b>" + (p.namobj || "Sekolah") + "</b><br/>Keterangan: " + (p.keterangan || "-"));
+                if (p.namobj) {
+                  layer.bindTooltip(p.namobj, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
+                }
+             }
+           });
+           
+           // Add the GeoJSON layer to the Cluster Group
+           sekolahCluster.addLayer(geoJsonLayer);
+           map.addLayer(sekolahCluster);
+           
+           // Set the global variable used by checkbox logic
+           sekolahLayer = sekolahCluster;
+
+        }).catch(function(err) {
+            console.error("Failed Sekolah Cluster", err);
+            alert("Gagal memuat layer Sekolah");
+        });
+      }
+
 
       // --- EVENT LISTENERS FOR LAYERS ---
 
@@ -777,17 +861,24 @@
       });
 
       // Education
+      // UPDATED: Use loadSekolahCluster instead of generic load
       document.getElementById("layer_sekolah").addEventListener("change", function(e) {
          var legend = document.getElementById("legend_sekolah");
          if (e.target.checked) {
-            if (sekolahLayer) map.addLayer(sekolahLayer);
-            else loadGenericLayer("Sekolah", sekolahUrl, getSekolahColor, function(l){ sekolahLayer = l; });
+            // Check if we have loaded it yet
+            if (sekolahLayer && (map.hasLayer(sekolahLayer) || (sekolahCluster && map.hasLayer(sekolahCluster)))) {
+                // already on map? do nothing or re-add
+                if (sekolahCluster && !map.hasLayer(sekolahCluster)) map.addLayer(sekolahCluster);
+            } else {
+                loadSekolahCluster();
+            }
             if(legend) legend.style.display = "block";
          } else {
-            if (sekolahLayer && map.hasLayer(sekolahLayer)) map.removeLayer(sekolahLayer);
+            if (sekolahCluster && map.hasLayer(sekolahCluster)) map.removeLayer(sekolahCluster);
             if(legend) legend.style.display = "none";
          }
       });
+
       document.getElementById("layer_kampus").addEventListener("change", function(e) {
          var legend = document.getElementById("legend_kampus");
          if (e.target.checked) {
