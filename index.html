@@ -511,7 +511,8 @@
       });
 
       // Default map with OSM
-      var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm] });
+      // UPDATED: Added preferCanvas: true to optimize rendering for large datasets (e.g. 4500+ schools)
+      var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm], preferCanvas: true });
       L.control.scale().addTo(map);
 
       // --- ZOOM DEPENDENT LABELS LOGIC ---
