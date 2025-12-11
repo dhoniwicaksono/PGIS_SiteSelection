@@ -302,7 +302,8 @@
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display:none;">
           <div class="legend-item"><span class="legend-dot" style="background:#d32f2f"></span>Gubernur / DIY</div>
           <div class="legend-item"><span class="legend-dot" style="background:#f57c00"></span>Bupati / Walikota</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#1976d2"></span>Kecamatan / Kemantren</div>
+          <!-- UPDATE LABEL LEGENDA -->
+          <div class="legend-item"><span class="legend-dot" style="background:#1976d2"></span>Kecamatan / Kemantren / Kapanewon</div>
           <div class="legend-item"><span class="legend-dot" style="background:#388e3c"></span>Kelurahan / Desa</div>
           <div class="legend-item"><span class="legend-dot" style="background:#757575"></span>Lainnya</div>
         </div>
@@ -372,7 +373,8 @@
         var k = kategori.toLowerCase();
         if (k.includes("gubernur") || k.includes("daerah istimewa")) return "#d32f2f"; // Merah
         if (k.includes("bupati") || k.includes("walikota") || k.includes("kota")) return "#f57c00"; // Oranye
-        if (k.includes("camat") || k.includes("kemantren")) return "#1976d2"; // Biru
+        // UPDATE: Tambahkan 'kapanewon' di sini
+        if (k.includes("camat") || k.includes("kemantren") || k.includes("kapanewon")) return "#1976d2"; // Biru
         if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan")) return "#388e3c"; // Hijau
         return "#757575"; // Abu-abu default
       }
