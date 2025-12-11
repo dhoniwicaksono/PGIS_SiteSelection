@@ -98,8 +98,8 @@
       .radio-label {
         display: flex;
         align-items: center;
-        margin-top: 4px;
-        font-weight: normal;
+        margin-top: 4px; 
+        font-weight: normal; 
         cursor: pointer;
       }
       .radio-label input {
@@ -259,13 +259,19 @@
     <div id="sidebarRight">
       <!-- Added Basemap Section Here -->
       <h3 style="margin: 6px 0">Basemap</h3>
-      <div class="small" style="margin-bottom: 8px">Pilih tampilan peta dasar.</div>
-      <div style="margin-bottom: 12px">
-        <label class="radio-label"> <input type="radio" name="basemap_select" value="osm" checked /> OSM Standard </label>
-        <label class="radio-label"> <input type="radio" name="basemap_select" value="stadia" /> Stadia Satellite </label>
-        <label class="radio-label"> <input type="radio" name="basemap_select" value="opnv" /> OPNVKarte (Transport) </label>
+      <div class="small" style="margin-bottom: 8px;">Pilih tampilan peta dasar.</div>
+      <div style="margin-bottom: 12px;">
+        <label class="radio-label">
+          <input type="radio" name="basemap_select" value="osm" checked /> OSM Standard
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="basemap_select" value="esri" /> Esri Satellite
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="basemap_select" value="opnv" /> OPNVKarte (Transport)
+        </label>
       </div>
-
+      
       <hr />
 
       <h3 style="margin: 6px 0">Tools</h3>
@@ -288,18 +294,14 @@
       // --- Map init ---
       var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" });
 
-      var Stadia_AlidadeSatellite = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}", {
-        minZoom: 0,
-        maxZoom: 20,
-        attribution:
-          '&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        ext: "jpg",
+      // FIX: Replaced Stadia with Esri World Imagery (No API Key required for demo)
+      var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+	    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
       });
 
-      var OPNVKarte = L.tileLayer("https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png", {
+      var OPNVKarte = L.tileLayer('https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png', {
         maxZoom: 18,
-        attribution:
-          'Map <a href="https://memomaps.de/">memomaps.de</a> <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: 'Map <a href="https://memomaps.de/">memomaps.de</a> <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       });
 
       // Default map with OSM
@@ -309,21 +311,21 @@
       // --- CUSTOM BASEMAP CONTROL LOGIC ---
       // Listen to radio changes in the sidebar
       var basemapRadios = document.querySelectorAll('input[name="basemap_select"]');
-      basemapRadios.forEach(function (radio) {
-        radio.addEventListener("change", function (e) {
+      basemapRadios.forEach(function(radio) {
+        radio.addEventListener('change', function(e) {
           var val = e.target.value;
           // remove all known base layers first to ensure clean switch
           if (map.hasLayer(osm)) map.removeLayer(osm);
-          if (map.hasLayer(Stadia_AlidadeSatellite)) map.removeLayer(Stadia_AlidadeSatellite);
+          if (map.hasLayer(Esri_WorldImagery)) map.removeLayer(Esri_WorldImagery);
           if (map.hasLayer(OPNVKarte)) map.removeLayer(OPNVKarte);
 
           // add selected
-          if (val === "osm") {
-            map.addLayer(osm);
-          } else if (val === "stadia") {
-            map.addLayer(Stadia_AlidadeSatellite);
-          } else if (val === "opnv") {
-            map.addLayer(OPNVKarte);
+          if (val === 'osm') {
+             map.addLayer(osm);
+          } else if (val === 'esri') {
+             map.addLayer(Esri_WorldImagery);
+          } else if (val === 'opnv') {
+             map.addLayer(OPNVKarte);
           }
         });
       });
