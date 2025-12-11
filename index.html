@@ -68,7 +68,14 @@
         display: none;
       }
 
-      @media (max-width: 700px) {
+      /* BREAKPOINT UPDATE: 
+         Ubah dari 700px ke 1024px.
+         Ini akan mencakup:
+         - Semua HP (Portrait/Landscape)
+         - iPad/Tablet (Portrait ~768px)
+         - iPad/Tablet (Landscape ~1024px)
+      */
+      @media (max-width: 1024px) {
         #sidebar,
         #sidebarRight {
           position: fixed;
@@ -86,13 +93,13 @@
           z-index: 2000;
         }
 
-        /* Class untuk mode MINIMIZE di mobile */
+        /* Class untuk mode MINIMIZE di mobile/tablet */
         .sidebar-minimized {
           max-height: 50px !important; /* Hanya tampilkan header */
           overflow: hidden !important;
         }
 
-        /* Tampilkan tombol minimize di mobile */
+        /* Tampilkan tombol minimize di mobile/tablet */
         .mobile-header-controls {
           display: block;
           float: right;
