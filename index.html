@@ -415,14 +415,14 @@
       <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Layers</h4>
       <div style="margin-bottom: 12px">
         
-        <!-- 1. PEMERINTAHAN (UPDATED: Grayscale) -->
+        <!-- 1. PEMERINTAHAN (UPDATED: Grayscale REVISI) -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah</div>
         <label class="ctrl-label"> <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan </label>
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #252525"></span>Kantor Gubernur</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #525252"></span>Kantor Bupati/ Walikota</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #737373"></span>Kantor Kecamatan/ Kemantren</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #969696"></span>Kantor Desa/ Kelurahan/ Kalurahan</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #000000"></span>Kantor Gubernur</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #252525"></span>Kantor Bupati/ Walikota</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #525252"></span>Kantor Kecamatan/ Kemantren</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #737373"></span>Kantor Desa/ Kelurahan/ Kalurahan</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
@@ -669,15 +669,15 @@
 
       // --- COLOR & STYLE FUNCTIONS (Preserved from Custom Symbols) ---
 
-      // 1. PEMERINTAHAN (UPDATED: Grayscale)
+      // 1. PEMERINTAHAN (UPDATED: Grayscale REVISI)
       function getGovColor(kategori) {
-        if (!kategori) return "#cccccc";
+        if (!kategori) return "#737373";
         var k = String(kategori).toLowerCase();
-        if (k.includes("gubernur") || k.includes("diy")) return "#252525"; 
-        if (k.includes("bupati") || k.includes("walikota")) return "#525252"; 
-        if (k.includes("camat") || k.includes("kemantren") || k.includes("kecamatan")) return "#737373"; 
-        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan") || k.includes("lurah")) return "#969696"; 
-        return "#cccccc"; 
+        if (k.includes("gubernur") || k.includes("diy")) return "#000000"; 
+        if (k.includes("bupati") || k.includes("walikota")) return "#252525"; 
+        if (k.includes("camat") || k.includes("kemantren") || k.includes("kecamatan")) return "#525252"; 
+        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan") || k.includes("lurah")) return "#737373"; 
+        return "#737373"; 
       }
 
       // 2. KESEHATAN
