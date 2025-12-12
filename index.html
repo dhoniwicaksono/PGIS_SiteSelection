@@ -205,65 +205,16 @@
         box-shadow: 0 0 1px rgba(0, 0, 0, 0.2); 
       }
       
-      /* Updated outlines to Gray (#cccccc) */
-      
-      /* Circle (Education) */
-      .sym-circle {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        border: 2px solid #cccccc; /* Gray Outline */
-      }
-      /* Square (Government) */
-      .sym-square {
-        width: 12px;
-        height: 12px;
-        border-radius: 0;
-        border: 2px solid #cccccc; /* Gray Outline */
-      }
-      /* Diamond (Economy - IBM) */
-      .sym-diamond {
-        width: 10px;
-        height: 10px;
-        transform: rotate(45deg);
-        border: 2px solid #cccccc; /* Gray Outline */
-        margin-left: 2px;
-        margin-right: 8px;
-      }
-      /* Hexagon (Pasar) */
-      .sym-hexagon {
-        width: 14px;
-        height: 14px;
-        /* Hexagon via CSS clip-path or SVG is easier, using placeholder for alignment */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      /* Star (Tourism) */
-      .sym-star {
-         width: 14px;
-         height: 14px;
-         background: transparent;
-         display: flex;
-         justify-content: center;
-         align-items: center;
-      }
-      /* H (Health) */
+      /* Outlines to Gray (#cccccc) */
+      .sym-circle { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #cccccc; }
+      .sym-square { width: 12px; height: 12px; border-radius: 0; border: 2px solid #cccccc; }
+      .sym-diamond { width: 10px; height: 10px; transform: rotate(45deg); border: 2px solid #cccccc; margin-left: 2px; margin-right: 8px; }
+      .sym-hexagon { width: 14px; height: 14px; display: flex; justify-content: center; align-items: center; }
+      .sym-star { width: 14px; height: 14px; background: transparent; display: flex; justify-content: center; align-items: center; }
       .sym-h {
-        width: 14px;
-        height: 14px;
-        background: transparent !important;
-        box-shadow: none;
-        font-weight: 900;
-        font-family: sans-serif;
-        text-align: center;
-        line-height: 14px;
-        font-size: 14px;
-        text-shadow: 
-           -1px -1px 0 #cccccc,  
-            1px -1px 0 #cccccc,
-           -1px  1px 0 #cccccc,
-            1px  1px 0 #cccccc;
+        width: 14px; height: 14px; background: transparent !important; box-shadow: none;
+        font-weight: 900; font-family: sans-serif; text-align: center; line-height: 14px; font-size: 14px;
+        text-shadow: -1px -1px 0 #cccccc, 1px -1px 0 #cccccc, -1px 1px 0 #cccccc, 1px 1px 0 #cccccc;
       }
 
       input[type="text"],
@@ -297,16 +248,9 @@
       }
 
       @media (max-width: 700px) {
-        table th:nth-child(5),
-        table td:nth-child(5),
-        table th:nth-child(6),
-        table td:nth-child(6) {
-          display: none;
-        }
-        .btn {
-          font-size: 13px;
-          padding: 8px 10px;
-        }
+        table th:nth-child(5), table td:nth-child(5),
+        table th:nth-child(6), table td:nth-child(6) { display: none; }
+        .btn { font-size: 13px; padding: 8px 10px; }
       }
 
       .leaflet-control-layers {
@@ -328,7 +272,7 @@
         background: #f5f8ff;
       }
 
-      /* UPDATED LABEL STYLE: WRAPPING & SEMI-TRANSPARENT BG */
+      /* --- UPDATED LABEL STYLE --- */
       .feature-label {
         background: rgba(255, 255, 255, 0.75); /* Semi-transparent white */
         border: 1px solid rgba(0, 0, 0, 0.2);
@@ -336,15 +280,17 @@
         padding: 1px 4px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.15);
 
-        font-size: 13px;
-        font-weight: bold;
-        color: #222; /* Darker text for contrast on white */
-        text-transform: none !important;
-        text-shadow: none; /* Removed heavy text shadow */
+        /* Default Font Size (Fallback) */
+        font-size: 9px; 
         
-        /* Text Wrapping Properties */
-        white-space: normal;
-        max-width: 120px;
+        font-weight: bold;
+        color: #222;
+        text-transform: none !important;
+        text-shadow: none;
+        
+        /* Text Wrapping */
+        white-space: normal; /* Allow breaks */
+        max-width: none; /* Removed max-width restriction to let <br> dictate width or use auto */
         text-align: center;
         line-height: 1.2;
         
@@ -354,6 +300,18 @@
       .show-labels .feature-label {
         display: block !important;
       }
+
+      /* DYNAMIC FONT SIZES BASED ON ZOOM PARENT CLASS */
+      /* Zoom 15: 9px (Default set above, or reinforced here) */
+      .map-zoom-15 .feature-label { font-size: 9px; }
+      
+      /* Zoom 16: 10px */
+      .map-zoom-16 .feature-label { font-size: 10px; }
+      
+      /* Zoom 17+: 11px */
+      .map-zoom-17 .feature-label, 
+      .map-zoom-18 .feature-label,
+      .map-zoom-19 .feature-label { font-size: 11px; }
 
       /* Custom Div Icon Style */
       .custom-div-icon {
@@ -639,16 +597,38 @@
       var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm], preferCanvas: true });
       L.control.scale().addTo(map);
 
-      // --- Label Visibility on Zoom ---
+      // --- Label Visibility & DYNAMIC FONT on Zoom ---
       function checkZoomForLabels() {
         var z = map.getZoom();
         var container = map.getContainer();
-        // Updated zoom level threshold from 17 to 15
+        
+        // 1. Show/Hide threshold
         if (z >= 15) container.classList.add("show-labels");
         else container.classList.remove("show-labels");
+
+        // 2. Dynamic Font Size Classes
+        // Reset all zoom classes first
+        container.classList.remove("map-zoom-15", "map-zoom-16", "map-zoom-17", "map-zoom-18", "map-zoom-19");
+        
+        if (z >= 15) {
+          // Add appropriate class (cap at 19)
+          var zoomClass = "map-zoom-" + (z > 19 ? 19 : z);
+          container.classList.add(zoomClass);
+        }
       }
       map.on("zoomend", checkZoomForLabels);
       checkZoomForLabels();
+
+      // --- Helper: Format Label Text (3 Words per Line) ---
+      function formatLabelText(text) {
+        if (!text) return "";
+        var words = text.split(" ");
+        var lines = [];
+        for (var i = 0; i < words.length; i += 3) {
+          lines.push(words.slice(i, i + 3).join(" "));
+        }
+        return lines.join("<br>");
+      }
 
       // --- Basemap Switch ---
       document.querySelectorAll('input[name="basemap_select"]').forEach(function (radio) {
@@ -882,7 +862,9 @@
               var nm = p.namobj || key;
               layer.bindPopup("<b>" + nm + "</b><br/>" + (p.keterangan || p.kategori || "-"));
               if (p.namobj) {
-                layer.bindTooltip(p.namobj, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
+                // APPLY FORMATTING HERE (3 words per line)
+                var formattedLabel = formatLabelText(p.namobj);
+                layer.bindTooltip(formattedLabel, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
               }
             }
           }).addTo(map);
@@ -927,7 +909,11 @@
             onEachFeature: function (feature, layer) {
               var p = feature.properties;
               layer.bindPopup("<b>" + (p.namobj||"Sekolah") + "</b><br/>" + (p.keterangan||"-"));
-              if(p.namobj) layer.bindTooltip(p.namobj, {permanent:true, direction:"top", className:"feature-label", offset:[0,-8]});
+              if(p.namobj) {
+                 // APPLY FORMATTING HERE (3 words per line)
+                 var formattedLabel = formatLabelText(p.namobj);
+                 layer.bindTooltip(formattedLabel, {permanent:true, direction:"top", className:"feature-label", offset:[0,-8]});
+              }
             }
           });
           cluster.addLayer(gj);
