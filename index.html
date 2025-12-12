@@ -1106,14 +1106,20 @@
              var resp = await fetch(candidates[i]);
              if(!resp.ok) continue;
              var gj = await resp.json();
+             
+             // REVISION: Do NOT .addTo(map) automatically
+             // This keeps the map clean (no full black outlines)
+             // We only use this layer for search data and then highlight specific results
              var layer = L.geoJSON(gj, {
                style: styleFor(level),
                onEachFeature: function(feature, lyr){
                  var props = feature.properties || {};
                  var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "";
+                 // Tooltip binding is still good if we ever show it, but it won't show if layer isn't added
                  lyr.bindTooltip(String(name), {permanent:true, direction:"center", className:"admin-label admin-label-"+level});
                }
-             }).addTo(map);
+             }); 
+             
              adminLayers[key] = layer;
              adminLayerLevels[key] = level;
              return layer;
@@ -1262,18 +1268,32 @@
         function showResultsList(matches) {
            var container = document.getElementById("admin_search_results");
            container.innerHTML = "";
+           
+           // A. Clean up any existing admin layers first (just in case)
+           Object.values(adminLayers).forEach(function(l) { 
+               if(l && map.hasLayer(l)) map.removeLayer(l); 
+           });
+
            if (!matches || matches.length === 0) {
              container.innerHTML = '<div class="small">Tidak ditemukan.</div>';
              return;
            }
            
-           // Highlight & Zoom to all matches
+           // B. Create Highlight Layer (Orange Outline) for ALL matches
            if(highlightLayer) map.removeLayer(highlightLayer);
            var fc = { type: "FeatureCollection", features: matches.map(m=>m.feature) };
-           highlightLayer = L.geoJSON(fc, { style: {color:"#ff7800", weight:4, fill:false} }).addTo(map);
-           try { map.fitBounds(highlightLayer.getBounds()); } catch(e){}
+           
+           highlightLayer = L.geoJSON(fc, { 
+               style: {color:"#ff7800", weight:4, fill:false, opacity:1} 
+           }).addTo(map);
 
-           // List items
+           // C. Auto Zoom to fit all matches
+           try { 
+               var b = highlightLayer.getBounds();
+               if(b.isValid()) map.fitBounds(b, {padding:[20,20], maxZoom:14}); 
+           } catch(e){}
+
+           // D. List items
            matches.forEach(function (m, idx) {
              var row = document.createElement("div");
              row.style.padding = "6px";
@@ -1281,10 +1301,18 @@
              row.style.cursor = "pointer";
              row.innerHTML = "<b>" + (idx + 1) + "</b> " + m.name;
              
-             // Zoom to specific item on click
+             // Zoom to specific item on click & Highlight ONLY that one
              row.onclick = function(){
-                var b = L.geoJSON(m.feature).getBounds();
-                map.fitBounds(b);
+                if(highlightLayer) map.removeLayer(highlightLayer);
+                
+                // Re-create highlight for just this item
+                highlightLayer = L.geoJSON(m.feature, { 
+                    style: {color:"#ff7800", weight:4, fill:false, opacity:1} 
+                }).addTo(map);
+
+                // Zoom to it
+                var b = highlightLayer.getBounds();
+                map.fitBounds(b, {padding:[20,20], maxZoom:15});
              };
              container.appendChild(row);
            });
@@ -1306,10 +1334,20 @@
         });
 
         document.getElementById("btn_admin_clear").addEventListener("click", function () {
+          // Clear Inputs
           queryInput.value = "";
           document.getElementById("admin_search_results").innerHTML = "";
-          if(highlightLayer) map.removeLayer(highlightLayer);
-          Object.values(adminLayers).forEach(l => { if(l) map.removeLayer(l); });
+          
+          // Clear Highlight
+          if(highlightLayer) {
+              map.removeLayer(highlightLayer);
+              highlightLayer = null;
+          }
+          
+          // Clear any full admin layers if present
+          Object.values(adminLayers).forEach(l => { if(l && map.hasLayer(l)) map.removeLayer(l); });
+          
+          // Reset internal state
           adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
         });
       })();
