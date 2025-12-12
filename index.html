@@ -201,42 +201,52 @@
       .legend-symbol {
         display: inline-block;
         margin-right: 6px;
-        box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+        /* Softer shadow to match lighter outline */
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.2); 
       }
-      /* Circle (Default/Education) */
+      
+      /* Updated outlines to Gray (#cccccc) */
+      
+      /* Circle (Education) */
       .sym-circle {
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        border: 2px solid #fff;
+        border: 2px solid #cccccc; /* Gray Outline */
       }
       /* Square (Government) */
       .sym-square {
         width: 12px;
         height: 12px;
         border-radius: 0;
-        border: 2px solid #fff;
+        border: 2px solid #cccccc; /* Gray Outline */
       }
-      /* Diamond (Economy) */
+      /* Diamond (Economy - IBM) */
       .sym-diamond {
         width: 10px;
         height: 10px;
         transform: rotate(45deg);
-        border: 2px solid #fff;
-        margin-left: 2px; /* adjust alignment */
+        border: 2px solid #cccccc; /* Gray Outline */
+        margin-left: 2px;
         margin-right: 8px;
       }
-      /* Triangle (Tourism) */
-      .sym-triangle {
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-bottom: 12px solid; /* color set inline */
-        border-top: 0;
-        background: transparent !important; /* override bg */
-        box-shadow: none; /* css triangles don't take box-shadow well on shape */
-        filter: drop-shadow(0 0 1px rgba(0,0,0,0.3));
+      /* Hexagon (Pasar) */
+      .sym-hexagon {
+        width: 14px;
+        height: 14px;
+        /* Hexagon via CSS clip-path or SVG is easier, using placeholder for alignment */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      /* Star (Tourism) */
+      .sym-star {
+         width: 14px;
+         height: 14px;
+         background: transparent;
+         display: flex;
+         justify-content: center;
+         align-items: center;
       }
       /* H (Health) */
       .sym-h {
@@ -249,7 +259,11 @@
         text-align: center;
         line-height: 14px;
         font-size: 14px;
-        /* color set inline */
+        text-shadow: 
+           -1px -1px 0 #cccccc,  
+            1px -1px 0 #cccccc,
+           -1px  1px 0 #cccccc,
+            1px  1px 0 #cccccc;
       }
 
       input[type="text"],
@@ -314,11 +328,12 @@
         background: #f5f8ff;
       }
 
+      /* UPDATED LABEL SIZE */
       .feature-label {
         background: transparent;
         border: none;
         box-shadow: none;
-        font-size: 11px;
+        font-size: 13px; /* Increased from 11px */
         font-weight: bold;
         color: #333;
         text-transform: none !important;
@@ -431,86 +446,117 @@
       <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Layers</h4>
       <div style="margin-bottom: 12px">
         
-        <!-- 1. PEMERINTAHAN (KOTAK, MERAH-ORANGE) -->
+        <!-- 1. PEMERINTAHAN (KOTAK) -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah (Kotak)</div>
         <label class="ctrl-label"> <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan </label>
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #b71c1c"></span>Gubernur / DIY</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #d32f2f"></span>Bupati / Walikota</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #f57c00"></span>Kecamatan</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #ff9800"></span>Kelurahan / Desa</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #ffe0b2"></span>Lainnya</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #a50f15"></span>Gubernur / DIY</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #de2d26"></span>Bupati / Walikota</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fb6a4a"></span>Kecamatan</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fcae91"></span>Kelurahan / Desa</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fee5d9"></span>Lainnya</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 2. KESEHATAN (H, BIRU) -->
+        <!-- 2. KESEHATAN (H) -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">2. Fasilitas Kesehatan (Huruf H)</div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_rs" /> Rumah Sakit </label>
         <div id="legend_rs" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #0d47a1">H</span>RS Umum</div>
-          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #1976d2">H</span>RS Khusus/Lainnya</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #253494">H</span>RS Umum</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #2c7fb8">H</span>RS Khusus/Lainnya</div>
         </div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_puskesmas" /> Puskesmas </label>
         <div id="legend_puskesmas" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #4fc3f7">H</span>Puskesmas</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #41b6c4">H</span>Puskesmas</div>
         </div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_klinik" /> Klinik </label>
         <div id="legend_klinik" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #b3e5fc">H</span>Klinik</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #a1dab4">H</span>Klinik</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 3. PENDIDIKAN (LINGKARAN, AS IS) -->
-        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">3. Fasilitas Pendidikan (Tetap)</div>
+        <!-- 3. PENDIDIKAN (LINGKARAN) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">3. Fasilitas Pendidikan (Lingkaran)</div>
         <label class="ctrl-label">
           <input type="checkbox" id="layer_sekolah" /> Sekolah (SD/SMP/SMA)
           <span style="font-size: 10px; background: #eee; padding: 1px 3px; border-radius: 3px; margin-left: 4px;">Cluster</span>
         </label>
         <div id="legend_sekolah" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #0277bd"></span>SMA / SMK</div>
-          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #29b6f6"></span>SMP / Sederajat</div>
-          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #81d4fa"></span>SD / Sederajat</div>
+          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #d95f0e"></span>SMA / SMK</div>
+          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #fe9929"></span>SMP / Sederajat</div>
+          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #fed98e"></span>SD / Sederajat</div>
         </div>
         
         <label class="ctrl-label"> <input type="checkbox" id="layer_kampus" /> Perguruan Tinggi </label>
         <div id="legend_kampus" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #01579b"></span>Universitas</div>
-          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #0288d1"></span>Institut/Poltek</div>
+          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #993404"></span>Universitas</div>
+          <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #d95f0e"></span>Institut/Poltek</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 4. EKONOMI (DIAMOND, PINK) -->
-        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">4. Fasilitas Ekonomi (Diamond)</div>
+        <!-- 4. EKONOMI (PASAR = HEXAGON) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">4. Fasilitas Ekonomi</div>
 
-        <label class="ctrl-label"> <input type="checkbox" id="layer_pasar" /> Pasar Tradisional </label>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_pasar" /> Pasar Tradisional (Hexagon) </label>
         <div id="legend_pasar" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #880e4f"></span>Pasar Harian</div>
-          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #e91e63"></span>Pasar Non Harian</div>
+          <div class="legend-item">
+             <span class="legend-symbol sym-hexagon">
+               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#8e0152" stroke="#cccccc" stroke-width="2"/></svg>
+             </span>Pasar Harian
+          </div>
+          <div class="legend-item">
+             <span class="legend-symbol sym-hexagon">
+               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#c51b7d" stroke="#cccccc" stroke-width="2"/></svg>
+             </span>Pasar Non Harian
+          </div>
         </div>
 
-        <label class="ctrl-label"> <input type="checkbox" id="layer_ibm" /> Industri (IBM) </label>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_ibm" /> Industri / IBM (Diamond) </label>
         <div id="legend_ibm" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #ad1457"></span>Industri Besar/Sedang</div>
-          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #f06292"></span>Industri Kecil</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #b2df8a"></span>Makanan & Minuman</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #fb9a99"></span>Tekstil & Kulit</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #6a3d9a"></span>Kayu & Furnitur</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #cab2d6"></span>Kertas & Cetak</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #e31a1c"></span>Kimia & Plastik</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #ff7f00"></span>Logam & Mesin</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #33a02c"></span>Kerajinan</div>
+          <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #a6cee3"></span>Lainnya</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 5. PARIWISATA (SEGITIGA, UNGU) -->
-        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">5. Pariwisata (Segitiga)</div>
+        <!-- 5. PARIWISATA (BINTANG) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">5. Pariwisata (Bintang)</div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_dtw" /> Objek Wisata (DTW) </label>
         <div id="legend_dtw" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-triangle" style="border-bottom-color: #4a148c"></span>Wisata Alam</div>
-          <div class="legend-item"><span class="legend-symbol sym-triangle" style="border-bottom-color: #7b1fa2"></span>Wisata Bahari</div>
-          <div class="legend-item"><span class="legend-symbol sym-triangle" style="border-bottom-color: #ba68c8"></span>Wisata Budaya</div>
-          <div class="legend-item"><span class="legend-symbol sym-triangle" style="border-bottom-color: #e1bee7"></span>Desa Wisata</div>
+          <!-- Helper for star SVG in legend -->
+          <div class="legend-item">
+            <span class="legend-symbol sym-star">
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#33a02c" stroke="#cccccc" stroke-width="2"/></svg>
+            </span>Wisata Alam
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol sym-star">
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#1f78b4" stroke="#cccccc" stroke-width="2"/></svg>
+            </span>Wisata Bahari
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol sym-star">
+               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#ff7f00" stroke="#cccccc" stroke-width="2"/></svg>
+            </span>Wisata Budaya
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol sym-star">
+               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#d7191c" stroke="#cccccc" stroke-width="2"/></svg>
+            </span>Desa Wisata
+          </div>
         </div>
       </div>
 
@@ -633,82 +679,108 @@
 
       // --- COLOR & STYLE FUNCTIONS ---
 
-      // 1. PEMERINTAHAN: Red -> Orange Gradient (SQUARE)
+      // 1. PEMERINTAHAN
       function getGovColor(kategori) {
-        if (!kategori) return "#ef6c00";
+        if (!kategori) return "#fc9272";
         var k = String(kategori).toLowerCase();
-        if (k.includes("gubernur") || k.includes("diy")) return "#b71c1c"; // Dark Red
-        if (k.includes("bupati") || k.includes("walikota")) return "#d32f2f"; // Red
-        if (k.includes("camat") || k.includes("kemantren")) return "#f57c00"; // Orange Dark
-        if (k.includes("kelurahan") || k.includes("desa")) return "#ff9800"; // Orange
-        return "#ffe0b2"; // Light Orange
+        if (k.includes("gubernur") || k.includes("diy")) return "#a50f15"; 
+        if (k.includes("bupati") || k.includes("walikota")) return "#de2d26"; 
+        if (k.includes("camat") || k.includes("kemantren")) return "#fb6a4a"; 
+        if (k.includes("kelurahan") || k.includes("desa")) return "#fcae91"; 
+        return "#fee5d9"; 
       }
 
-      // 2. KESEHATAN: Dark Blue -> Light Blue Gradient (LETTER H)
+      // 2. KESEHATAN
       function getRSColor(ket) {
-        if (!ket) return "#1976d2";
+        if (!ket) return "#2c7fb8";
         var k = String(ket).toLowerCase();
-        if (k.includes("rsu")) return "#0d47a1"; // Darkest Blue
-        return "#1976d2"; // Blue
+        if (k.includes("rsu")) return "#253494"; 
+        return "#2c7fb8"; 
       }
-      function getPuskesmasColor(ket) { return "#4fc3f7"; } // Light Blue
-      function getKlinikColor(ket) { return "#b3e5fc"; } // Pale Blue
+      function getPuskesmasColor(ket) { return "#41b6c4"; } 
+      function getKlinikColor(ket) { return "#a1dab4"; } 
 
-      // 3. PENDIDIKAN: Blue/Cyan (CIRCLE - Unchanged)
+      // 3. PENDIDIKAN
       function getSekolahColor(ket) {
-        if (!ket) return "#e1f5fe";
+        if (!ket) return "#fed98e";
         var k = String(ket).toLowerCase();
-        if (k.includes("sma") || k.includes("smk")) return "#0277bd";
-        if (k.includes("smp")) return "#29b6f6";
-        if (k.includes("sd")) return "#81d4fa";
-        return "#e1f5fe";
+        if (k.includes("sma") || k.includes("smk")) return "#d95f0e";
+        if (k.includes("smp")) return "#fe9929";
+        if (k.includes("sd")) return "#fed98e";
+        return "#ffffd4";
       }
       function getKampusColor(ket) {
-        // Restore original gradient logic for universities
-        if (!ket) return "#0288d1";
+        if (!ket) return "#d95f0e";
         var k = String(ket).toLowerCase();
-        if (k.includes("universitas")) return "#01579b"; // Darkest Blue
-        return "#0288d1"; // Dark Blue
+        if (k.includes("universitas")) return "#993404"; 
+        return "#d95f0e"; 
       }
 
-      // 4. EKONOMI: Dark Pink -> Light Pink Gradient (DIAMOND)
+      // 4. EKONOMI:
+      // PASAR = HEXAGON (Updated Colors)
       function getPasarColor(ket) {
-        if (!ket) return "#e91e63";
+        if (!ket) return "#c51b7d";
         var k = String(ket).toLowerCase();
-        if (k.includes("harian") && !k.includes("non")) return "#880e4f"; // Deep Pink
-        return "#e91e63"; // Pink
-      }
-      function getIbmColor(ket) {
-        // Industry mapping to Pinks
-        if (!ket) return "#f06292";
-        var k = String(ket).toLowerCase();
-        if (k.includes("besar") || k.includes("sedang")) return "#ad1457";
-        return "#f06292"; // Light Pink
+        if (k.includes("harian") && !k.includes("non")) return "#8e0152"; // Dark Pink
+        return "#c51b7d"; // Pink
       }
 
-      // 5. PARIWISATA: Dark Purple -> Light Purple Gradient (TRIANGLE)
-      function getDtwColor(ket) {
-        if (!ket) return "#ba68c8";
+      // INDUSTRI = DIAMOND (Updated Colors)
+      function getIbmColor(ket) {
+        if (!ket) return "#a6cee3";
         var k = String(ket).toLowerCase();
-        if (k.includes("alam")) return "#4a148c"; // Deepest Purple
-        if (k.includes("bahari") || k.includes("pantai")) return "#7b1fa2"; // Deep Purple
-        if (k.includes("budaya")) return "#ba68c8"; // Medium Purple
-        return "#e1bee7"; // Light Purple
+        
+        // Makanan & Minuman
+        if (k.includes("food") || k.includes("beverage") || k.includes("makan") || k.includes("minum")) return "#b2df8a";
+        
+        // Tekstil & Kulit
+        if (k.includes("textile") || k.includes("leather") || k.includes("tekstil") || k.includes("kulit")) return "#fb9a99";
+        
+        // Kayu & Furnitur
+        if (k.includes("wood") || k.includes("furniture") || k.includes("kayu") || k.includes("mebel")) return "#6a3d9a";
+        
+        // Kertas & Cetak
+        if (k.includes("paper") || k.includes("printing") || k.includes("kertas") || k.includes("cetak")) return "#cab2d6";
+        
+        // Kimia & Plastik
+        if (k.includes("chemical") || k.includes("plastic") || k.includes("kimia") || k.includes("plastik")) return "#e31a1c";
+        
+        // Logam & Mesin
+        if (k.includes("metal") || k.includes("machine") || k.includes("logam") || k.includes("mesin")) return "#ff7f00";
+        
+        // Kerajinan
+        if (k.includes("craft") || k.includes("kerajinan")) return "#33a02c";
+        
+        // Lainnya
+        return "#a6cee3";
+      }
+
+      // 5. PARIWISATA (Star)
+      function getDtwColor(ket) {
+        if (!ket) return "#ff7f00"; 
+        var k = String(ket).toLowerCase();
+        if (k.includes("alam")) return "#33a02c"; 
+        if (k.includes("bahari") || k.includes("pantai")) return "#1f78b4"; 
+        if (k.includes("budaya")) return "#ff7f00"; 
+        if (k.includes("desa")) return "#d7191c"; 
+        return "#ff7f00"; 
       }
 
       // --- CUSTOM MARKER CREATION ---
-      // type: 'square', 'h', 'diamond', 'triangle', 'circle'
+      // Updated with Gray Outline (#cccccc) for all shapes
       function createCustomMarker(latlng, type, color, properties) {
         var size = 14; 
+        // Outline Color (Adaptive Gray)
+        var strokeColor = "#cccccc";
+        var strokeWidth = 2; // Make outline slightly more visible if light gray
         
         if (type === 'circle') {
-          // Standard CircleMarker (Education)
           return L.circleMarker(latlng, {
             radius: 6,
-            color: "#ffffff",
-            weight: 2,
+            color: strokeColor, 
+            weight: strokeWidth,
             opacity: 1,
-            fillOpacity: 0.9,
+            fillOpacity: 1,
             fillColor: color
           });
         }
@@ -718,33 +790,46 @@
         if (type === 'square') {
           // SVG Rectangle
           html = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block;">
-                    <rect x="2" y="2" width="20" height="20" fill="${color}" stroke="white" stroke-width="3" />
+                    <rect x="2" y="2" width="20" height="20" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
         } 
         else if (type === 'diamond') {
           // SVG Rotated Rect (Diamond)
           html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
-                    <polygon points="12,2 22,12 12,22 2,12" fill="${color}" stroke="white" stroke-width="3" />
+                    <polygon points="12,2 22,12 12,22 2,12" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
         }
         else if (type === 'triangle') {
           // SVG Triangle
           html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
-                    <polygon points="2,21 12,3 22,21" fill="${color}" stroke="white" stroke-width="3" />
+                    <polygon points="2,21 12,3 22,21" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
+                  </svg>`;
+        }
+        else if (type === 'star') {
+          // SVG Star
+          html = `<svg width="${size+4}" height="${size+4}" viewBox="0 0 24 24" style="display:block;">
+                    <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
+                  </svg>`;
+        }
+        else if (type === 'hexagon') {
+          // SVG Hexagon
+          // Approx points for 24x24 box. Center 12,12
+          html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
+                    <polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
         }
         else if (type === 'h') {
-          // Letter H
+          // Letter H with Text Shadow Outline
           html = `<div style="
             width:${size}px; height:${size}px; 
             color:${color}; 
             font-weight:900; font-family:sans-serif; 
             font-size:16px; line-height:${size}px; text-align:center;
             text-shadow: 
-               -1px -1px 0 #fff,  
-                1px -1px 0 #fff,
-               -1px  1px 0 #fff,
-                1px  1px 0 #fff;
+               -1px -1px 0 ${strokeColor},  
+                1px -1px 0 ${strokeColor},
+               -1px  1px 0 ${strokeColor},
+                1px  1px 0 ${strokeColor};
           ">H</div>`;
         }
 
@@ -794,7 +879,6 @@
           layerStorage[key] = lyr;
         }).catch(err => {
           console.error("Layer error " + key, err);
-          // BUGFIX: Alert user instead of unchecking, so they know the control works but data is missing.
           alert("Gagal memuat layer: " + key + "\nFile mungkin tidak ditemukan: " + url);
         });
       }
@@ -827,6 +911,7 @@
             },
             pointToLayer: function (feature, latlng) {
               var col = getSekolahColor(feature.properties.keterangan);
+              // Use circle for Sekolah
               return createCustomMarker(latlng, 'circle', col);
             },
             onEachFeature: function (feature, layer) {
@@ -846,7 +931,7 @@
 
       // --- Event Listeners ---
       
-      // 1. Pemerintah (Square, Red-Orange)
+      // 1. Pemerintah (Square)
       document.getElementById("layer_kantor_pemerintah").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_kantor");
         if(e.target.checked) {
@@ -858,7 +943,7 @@
         }
       });
 
-      // 2. Kesehatan (H, Blue)
+      // 2. Kesehatan (H)
       document.getElementById("layer_rs").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_rs");
         if(e.target.checked) {
@@ -890,7 +975,7 @@
         }
       });
 
-      // 3. Pendidikan (Circle, Blue/Cyan)
+      // 3. Pendidikan (Circle)
       document.getElementById("layer_sekolah").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_sekolah");
         if(e.target.checked) {
@@ -902,7 +987,6 @@
         }
       });
 
-      // FIXED: Added Legend Logic for Kampus
       document.getElementById("layer_kampus").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_kampus");
         if(e.target.checked) {
@@ -914,11 +998,11 @@
         }
       });
 
-      // 4. Ekonomi (Diamond, Pink)
+      // 4. Ekonomi (Pasar = Hexagon, IBM = Diamond)
       document.getElementById("layer_pasar").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_pasar");
         if(e.target.checked) {
-          loadLayer("pasar", "ONLINE_DISPERINDAG_PASAR_PT.geojson", "diamond", getPasarColor);
+          loadLayer("pasar", "ONLINE_DISPERINDAG_PASAR_PT.geojson", "hexagon", getPasarColor);
           lg.style.display = "block";
         } else {
           if(layerStorage["pasar"]) map.removeLayer(layerStorage["pasar"]);
@@ -937,11 +1021,12 @@
         }
       });
 
-      // 5. Pariwisata (Triangle, Purple)
+      // 5. Pariwisata (Star)
       document.getElementById("layer_dtw").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_dtw");
         if(e.target.checked) {
-          loadLayer("dtw", "ONLINE_DISPAR_KUNJUNGAN_DTW_2024_PT.geojson", "triangle", getDtwColor);
+          // Change shape type to 'star'
+          loadLayer("dtw", "ONLINE_DISPAR_KUNJUNGAN_DTW_2024_PT.geojson", "star", getDtwColor);
           lg.style.display = "block";
         } else {
           if(layerStorage["dtw"]) map.removeLayer(layerStorage["dtw"]);
