@@ -201,11 +201,10 @@
       .legend-symbol {
         display: inline-block;
         margin-right: 6px;
-        /* Softer shadow to match lighter outline */
         box-shadow: 0 0 1px rgba(0, 0, 0, 0.2); 
       }
       
-      /* Outlines to Gray (#cccccc) */
+      /* Shape Classes */
       .sym-circle { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #cccccc; }
       .sym-square { width: 12px; height: 12px; border-radius: 0; border: 2px solid #cccccc; }
       .sym-diamond { width: 10px; height: 10px; transform: rotate(45deg); border: 2px solid #cccccc; margin-left: 2px; margin-right: 8px; }
@@ -257,7 +256,7 @@
         z-index: 1200;
       }
 
-      /* Admin Labels */
+      /* Admin Labels & Suggestions */
       .admin-label {
         background: rgba(255, 255, 255, 0.85);
         padding: 2px 4px;
@@ -267,20 +266,17 @@
       }
       .admin-label-prov { text-shadow: 0 0 8px #fff; font-weight: 700; }
       .admin-label-kab { text-shadow: 0 0 6px #fff; }
+      #admin_suggestions div:hover { background: #f5f8ff; }
 
-      #admin_suggestions div:hover {
-        background: #f5f8ff;
-      }
-
-      /* --- UPDATED LABEL STYLE --- */
+      /* --- UPDATED LABEL STYLE (Text Wrapping) --- */
       .feature-label {
-        background: rgba(255, 255, 255, 0.75); /* Semi-transparent white */
+        background: rgba(255, 255, 255, 0.75); 
         border: 1px solid rgba(0, 0, 0, 0.2);
         border-radius: 4px;
         padding: 1px 4px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.15);
 
-        /* Default Font Size (Fallback) */
+        /* Default Font Size */
         font-size: 9px; 
         
         font-weight: bold;
@@ -288,9 +284,13 @@
         text-transform: none !important;
         text-shadow: none;
         
-        /* Text Wrapping */
-        white-space: normal; /* Allow breaks */
-        max-width: none; /* Removed max-width restriction to let <br> dictate width or use auto */
+        /* REVISI: white-space: nowrap + <br> 
+           Ini memaksa browser untuk TIDAK memecah baris sendiri,
+           sehingga pemecahan baris murni dikendalikan oleh tag <br>
+           yang kita suntikkan setiap 2 kata.
+        */
+        white-space: nowrap; 
+        
         text-align: center;
         line-height: 1.2;
         
@@ -301,19 +301,13 @@
         display: block !important;
       }
 
-      /* DYNAMIC FONT SIZES BASED ON ZOOM PARENT CLASS */
-      /* Zoom 15: 9px (Default set above, or reinforced here) */
+      /* DYNAMIC FONT SIZES */
       .map-zoom-15 .feature-label { font-size: 9px; }
-      
-      /* Zoom 16: 10px */
       .map-zoom-16 .feature-label { font-size: 10px; }
-      
-      /* Zoom 17+: 11px */
       .map-zoom-17 .feature-label, 
       .map-zoom-18 .feature-label,
       .map-zoom-19 .feature-label { font-size: 11px; }
 
-      /* Custom Div Icon Style */
       .custom-div-icon {
         background: transparent;
         border: none;
@@ -323,6 +317,7 @@
   <body>
     <div id="map"></div>
 
+    <!-- LEFT SIDEBAR -->
     <div id="sidebar" class="mobile-visible">
       <div class="sidebar-header-row">
         <h3 style="margin: 0">Collector</h3>
@@ -393,6 +388,7 @@
       </div>
     </div>
 
+    <!-- RIGHT SIDEBAR -->
     <div id="sidebarRight">
       <div class="sidebar-header-row">
         <h3 style="margin: 0">Peta & Layers</h3>
@@ -413,7 +409,7 @@
       <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Layers</h4>
       <div style="margin-bottom: 12px">
         
-        <!-- 1. PEMERINTAHAN (Revised: Removed (Kotak)) -->
+        <!-- 1. PEMERINTAHAN -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah</div>
         <label class="ctrl-label"> <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan </label>
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display: none">
@@ -425,7 +421,7 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 2. KESEHATAN (Revised: Removed (Huruf H)) -->
+        <!-- 2. KESEHATAN -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">2. Fasilitas Kesehatan</div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_rs" /> Rumah Sakit </label>
@@ -446,7 +442,7 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 3. PENDIDIKAN (Revised: Removed (Lingkaran)) -->
+        <!-- 3. PENDIDIKAN -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">3. Fasilitas Pendidikan</div>
         <label class="ctrl-label">
           <input type="checkbox" id="layer_sekolah" /> Sekolah (SD/SMP/SMA)
@@ -466,7 +462,7 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 4. EKONOMI (Revised: Removed geometry descriptions) -->
+        <!-- 4. EKONOMI -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">4. Fasilitas Ekonomi</div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_pasar" /> Pasar Tradisional </label>
@@ -497,12 +493,11 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 5. PARIWISATA (Revised: Removed (Bintang)) -->
+        <!-- 5. PARIWISATA -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">5. Pariwisata</div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_dtw" /> Objek Wisata (DTW) </label>
         <div id="legend_dtw" style="margin-left: 24px; margin-top: 4px; display: none">
-          <!-- Helper for star SVG in legend -->
           <div class="legend-item">
             <span class="legend-symbol sym-star">
               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#33a02c" stroke="#cccccc" stroke-width="2"/></svg>
@@ -537,7 +532,7 @@
         </div>
       </div>
       
-      <!-- Admin Search -->
+      <!-- Admin Search Container (RESTORED) -->
       <div id="admin_search_container" style="margin-top: 12px; border-top: 1px solid #ddd; padding-top: 12px"></div>
     </div>
 
@@ -606,11 +601,8 @@
         else container.classList.remove("show-labels");
 
         // 2. Dynamic Font Size Classes
-        // Reset all zoom classes first
         container.classList.remove("map-zoom-15", "map-zoom-16", "map-zoom-17", "map-zoom-18", "map-zoom-19");
-        
         if (z >= 15) {
-          // Add appropriate class (cap at 19)
           var zoomClass = "map-zoom-" + (z > 19 ? 19 : z);
           container.classList.add(zoomClass);
         }
@@ -618,7 +610,7 @@
       map.on("zoomend", checkZoomForLabels);
       checkZoomForLabels();
 
-      // --- Helper: Format Label Text (2 Words per Line - Updated) ---
+      // --- Helper: Format Label Text (Strict 2 Words per Line) ---
       function formatLabelText(text) {
         if (!text) return "";
         var words = text.split(" ");
@@ -669,23 +661,14 @@
 
       // --- COLOR & STYLE FUNCTIONS ---
 
-      // 1. PEMERINTAHAN (Revised: Updated colors and classifications)
+      // 1. PEMERINTAHAN
       function getGovColor(kategori) {
         if (!kategori) return "#dfc27d";
         var k = String(kategori).toLowerCase();
-        
-        // Kantor Gubernur
         if (k.includes("gubernur") || k.includes("diy")) return "#e31a1c"; 
-        
-        // Kantor Bupati/ Walikota
         if (k.includes("bupati") || k.includes("walikota")) return "#fd8d3c"; 
-        
-        // Kantor Kecamatan/ Kemantren
         if (k.includes("camat") || k.includes("kemantren") || k.includes("kecamatan")) return "#a6611a"; 
-        
-        // Kantor Desa/ Kelurahan/ Kalurahan
         if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan") || k.includes("lurah")) return "#dfc27d"; 
-        
         return "#dfc27d"; 
       }
 
@@ -715,46 +698,28 @@
         return "#d95f0e"; 
       }
 
-      // 4. EKONOMI:
-      // PASAR = HEXAGON (Updated Colors)
+      // 4. EKONOMI
       function getPasarColor(ket) {
         if (!ket) return "#c51b7d";
         var k = String(ket).toLowerCase();
-        if (k.includes("harian") && !k.includes("non")) return "#8e0152"; // Dark Pink
-        return "#7fbc41"; // Changed non-daily to #7fbc41
+        if (k.includes("harian") && !k.includes("non")) return "#8e0152"; 
+        return "#7fbc41"; 
       }
 
-      // INDUSTRI = DIAMOND (Updated Colors)
       function getIbmColor(ket) {
         if (!ket) return "#a6cee3";
         var k = String(ket).toLowerCase();
-        
-        // Makanan & Minuman
         if (k.includes("food") || k.includes("beverage") || k.includes("makan") || k.includes("minum")) return "#b2df8a";
-        
-        // Tekstil & Kulit
         if (k.includes("textile") || k.includes("leather") || k.includes("tekstil") || k.includes("kulit")) return "#fb9a99";
-        
-        // Kayu & Furnitur
         if (k.includes("wood") || k.includes("furniture") || k.includes("kayu") || k.includes("mebel")) return "#6a3d9a";
-        
-        // Kertas & Cetak
         if (k.includes("paper") || k.includes("printing") || k.includes("kertas") || k.includes("cetak")) return "#cab2d6";
-        
-        // Kimia & Plastik
         if (k.includes("chemical") || k.includes("plastic") || k.includes("kimia") || k.includes("plastik")) return "#e31a1c";
-        
-        // Logam & Mesin
         if (k.includes("metal") || k.includes("machine") || k.includes("logam") || k.includes("mesin")) return "#ff7f00";
-        
-        // Kerajinan
         if (k.includes("craft") || k.includes("kerajinan")) return "#33a02c";
-        
-        // Lainnya
         return "#a6cee3";
       }
 
-      // 5. PARIWISATA (Star)
+      // 5. PARIWISATA
       function getDtwColor(ket) {
         if (!ket) return "#ff7f00"; 
         var k = String(ket).toLowerCase();
@@ -766,12 +731,10 @@
       }
 
       // --- CUSTOM MARKER CREATION ---
-      // Updated with Gray Outline (#cccccc) for all shapes
       function createCustomMarker(latlng, type, color, properties) {
         var size = 14; 
-        // Outline Color (Adaptive Gray)
         var strokeColor = "#cccccc";
-        var strokeWidth = 2; // Make outline slightly more visible if light gray
+        var strokeWidth = 2; 
         
         if (type === 'circle') {
           return L.circleMarker(latlng, {
@@ -787,38 +750,26 @@
         var html = "";
         
         if (type === 'square') {
-          // SVG Rectangle
           html = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block;">
                     <rect x="2" y="2" width="20" height="20" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
         } 
         else if (type === 'diamond') {
-          // SVG Rotated Rect (Diamond)
           html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
                     <polygon points="12,2 22,12 12,22 2,12" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
         }
-        else if (type === 'triangle') {
-          // SVG Triangle
-          html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
-                    <polygon points="2,21 12,3 22,21" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
-                  </svg>`;
-        }
         else if (type === 'star') {
-          // SVG Star
           html = `<svg width="${size+4}" height="${size+4}" viewBox="0 0 24 24" style="display:block;">
                     <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
         }
         else if (type === 'hexagon') {
-          // SVG Hexagon
-          // Approx points for 24x24 box. Center 12,12
           html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
                     <polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
         }
         else if (type === 'h') {
-          // Letter H with Text Shadow Outline
           html = `<div style="
             width:${size}px; height:${size}px; 
             color:${color}; 
@@ -842,7 +793,7 @@
         return L.marker(latlng, { icon: icon });
       }
 
-      // --- LAYER LOADERS ---
+      // --- LAYER LOADERS (Apply Text Wrapping Here) ---
       
       var layerStorage = {};
 
@@ -871,7 +822,7 @@
               var nm = p.namobj || key;
               layer.bindPopup("<b>" + nm + "</b><br/>" + (p.keterangan || p.kategori || "-"));
               if (p.namobj) {
-                // APPLY FORMATTING HERE (3 words per line)
+                // APPLY FORMATTING HERE (2 words per line)
                 var formattedLabel = formatLabelText(p.namobj);
                 layer.bindTooltip(formattedLabel, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
               }
@@ -919,7 +870,7 @@
               var p = feature.properties;
               layer.bindPopup("<b>" + (p.namobj||"Sekolah") + "</b><br/>" + (p.keterangan||"-"));
               if(p.namobj) {
-                 // APPLY FORMATTING HERE (3 words per line)
+                 // APPLY FORMATTING HERE (2 words per line)
                  var formattedLabel = formatLabelText(p.namobj);
                  layer.bindTooltip(formattedLabel, {permanent:true, direction:"top", className:"feature-label", offset:[0,-8]});
               }
@@ -936,7 +887,7 @@
 
       // --- Event Listeners ---
       
-      // 1. Pemerintah (Square)
+      // 1. Pemerintah
       document.getElementById("layer_kantor_pemerintah").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_kantor");
         if(e.target.checked) {
@@ -948,7 +899,7 @@
         }
       });
 
-      // 2. Kesehatan (H)
+      // 2. Kesehatan
       document.getElementById("layer_rs").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_rs");
         if(e.target.checked) {
@@ -980,7 +931,7 @@
         }
       });
 
-      // 3. Pendidikan (Circle)
+      // 3. Pendidikan
       document.getElementById("layer_sekolah").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_sekolah");
         if(e.target.checked) {
@@ -1003,7 +954,7 @@
         }
       });
 
-      // 4. Ekonomi (Pasar = Hexagon, IBM = Diamond)
+      // 4. Ekonomi
       document.getElementById("layer_pasar").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_pasar");
         if(e.target.checked) {
@@ -1026,11 +977,10 @@
         }
       });
 
-      // 5. Pariwisata (Star)
+      // 5. Pariwisata
       document.getElementById("layer_dtw").addEventListener("change", function(e) {
         var lg = document.getElementById("legend_dtw");
         if(e.target.checked) {
-          // Change shape type to 'star'
           loadLayer("dtw", "ONLINE_DISPAR_KUNJUNGAN_DTW_2024_PT.geojson", "star", getDtwColor);
           lg.style.display = "block";
         } else {
@@ -1103,9 +1053,152 @@
         updateTable();
       });
 
-      // Admin search Logic (Placeholder)
-      // (Simplified for this version to ensure file stability)
+      // --- Administrative Search Logic (RESTORED) ---
+      var adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
+      var adminLayerLevels = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
 
+      function styleFor(level) {
+        switch (level) {
+          case "prov": return { color: "#4b2e83", weight: 5, fill: false, opacity: 0.9 };
+          case "kab": return { color: "#2b7fb8", weight: 3.5, fill: false, opacity: 0.9 };
+          case "kec": return { color: "#2c7a3e", weight: 2.5, fill: false, opacity: 0.9 };
+          case "desa": return { color: "#666", weight: 1.5, fill: false, opacity: 0.9 };
+          default: return { color: "#000", weight: 1, fill: false };
+        }
+      }
+
+      async function loadAdminGeojson(key, url, level) {
+        var candidates = [url, "data/" + url];
+        if(adminLayers[key]) {
+           try { map.removeLayer(adminLayers[key]); } catch(e){}
+           adminLayers[key] = null;
+        }
+        for(var i=0; i<candidates.length; i++){
+          try {
+             var resp = await fetch(candidates[i]);
+             if(!resp.ok) continue;
+             var gj = await resp.json();
+             var layer = L.geoJSON(gj, {
+               style: styleFor(level),
+               onEachFeature: function(feature, lyr){
+                 var props = feature.properties || {};
+                 var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "";
+                 lyr.bindTooltip(String(name), {permanent:true, direction:"center", className:"admin-label admin-label-"+level});
+               }
+             }).addTo(map);
+             adminLayers[key] = layer;
+             adminLayerLevels[key] = level;
+             return layer;
+          } catch(e){}
+        }
+        alert("Gagal memuat layer admin: " + key);
+      }
+
+      function keyForLevel(level) {
+        if(level === "prov") return "WADMPR";
+        if(level === "kab") return "WADMKK";
+        if(level === "kec") return "WADMKC";
+        return "WADMKD";
+      }
+      function urlForKey(key) {
+        return key + ".geojson";
+      }
+      function matchName(props) {
+        return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "").toString();
+      }
+
+      // UI Logic for Admin Search
+      (function () {
+        var searchContainer = document.getElementById("admin_search_container");
+        searchContainer.innerHTML =
+          "<b>Search by Administrative</b><br/>" +
+          '<label style="display:block;margin-top:6px; font-weight:600;">Level</label>' +
+          '<select id="search_admin_level" style="width:100%; padding:6px; box-sizing:border-box">' +
+          '<option value="prov">Provinsi</option>' +
+          '<option value="kab">Kabupaten/Kota</option>' +
+          '<option value="kec">Kecamatan</option>' +
+          '<option value="desa">Desa</option>' +
+          "</select>" +
+          '<label style="display:block;margin-top:8px; font-weight:600;">Nama wilayah</label>' +
+          '<div style="position:relative">' +
+          '<input id="search_admin_query" type="text" autocomplete="off" placeholder="Masukkan nama..." style="width:100%; padding:6px; box-sizing:border-box" />' +
+          '<div id="admin_suggestions" style="position:absolute; left:0; right:0; top:40px; background:#fff; border:1px solid #ddd; max-height:180px; overflow:auto; display:none; z-index:2000;"></div>' +
+          "</div>" +
+          '<div style="display:flex; gap:8px; margin-top:8px;">' +
+          '<button id="btn_admin_search" class="btn">Search</button>' +
+          '<button id="btn_admin_clear" class="btn secondary">Clear</button>' +
+          "</div>" +
+          '<div id="admin_search_results" style="margin-top:8px; max-height:200px; overflow:auto; font-size:13px"></div>';
+
+        var suggestionBox = document.getElementById("admin_suggestions");
+        var queryInput = document.getElementById("search_admin_query");
+        var highlightLayer = null;
+
+        function searchInLayer(key, q) {
+          return new Promise(function (resolve, reject) {
+            var layer = adminLayers[key];
+            if (!layer) return reject("Layer not loaded");
+            var matches = [];
+            layer.eachLayer(function (l) {
+               var name = matchName(l.feature.properties);
+               if (name && name.toLowerCase().indexOf(q.toLowerCase()) !== -1) {
+                 matches.push({ name: name, layer: l, feature: l.feature });
+               }
+            });
+            resolve(matches);
+          });
+        }
+
+        function showResultsList(matches) {
+           var container = document.getElementById("admin_search_results");
+           container.innerHTML = "";
+           if (!matches || matches.length === 0) {
+             container.innerHTML = '<div class="small">Tidak ditemukan.</div>';
+             return;
+           }
+           
+           // Highlight first match zoom
+           if(highlightLayer) map.removeLayer(highlightLayer);
+           var fc = { type: "FeatureCollection", features: matches.map(m=>m.feature) };
+           highlightLayer = L.geoJSON(fc, { style: {color:"#ff7800", weight:4, fill:false} }).addTo(map);
+           try { map.fitBounds(highlightLayer.getBounds()); } catch(e){}
+
+           matches.forEach(function (m, idx) {
+             var row = document.createElement("div");
+             row.style.padding = "6px";
+             row.style.borderBottom = "1px solid #eee";
+             row.innerHTML = "<b>" + (idx + 1) + "</b> " + m.name;
+             row.onclick = function(){
+                var b = L.geoJSON(m.feature).getBounds();
+                map.fitBounds(b);
+             };
+             container.appendChild(row);
+           });
+        }
+
+        document.getElementById("btn_admin_search").addEventListener("click", function () {
+          var level = document.getElementById("search_admin_level").value;
+          var q = document.getElementById("search_admin_query").value.trim();
+          if (!q) { alert("Masukkan nama wilayah."); return; }
+          var key = keyForLevel(level);
+          
+          if(!adminLayers[key]) {
+             loadAdminGeojson(key, urlForKey(key), level).then(function(){
+                return searchInLayer(key, q);
+             }).then(showResultsList);
+          } else {
+             searchInLayer(key, q).then(showResultsList);
+          }
+        });
+
+        document.getElementById("btn_admin_clear").addEventListener("click", function () {
+          queryInput.value = "";
+          document.getElementById("admin_search_results").innerHTML = "";
+          if(highlightLayer) map.removeLayer(highlightLayer);
+          Object.values(adminLayers).forEach(l => { if(l) map.removeLayer(l); });
+          adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
+        });
+      })();
     </script>
   </body>
 </html>
