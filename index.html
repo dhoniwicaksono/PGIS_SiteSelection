@@ -328,17 +328,26 @@
         background: #f5f8ff;
       }
 
-      /* UPDATED LABEL SIZE */
+      /* UPDATED LABEL STYLE: WRAPPING & SEMI-TRANSPARENT BG */
       .feature-label {
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        font-size: 13px; /* Increased from 11px */
+        background: rgba(255, 255, 255, 0.75); /* Semi-transparent white */
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        padding: 1px 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+
+        font-size: 13px;
         font-weight: bold;
-        color: #333;
+        color: #222; /* Darker text for contrast on white */
         text-transform: none !important;
-        text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff;
-        white-space: nowrap;
+        text-shadow: none; /* Removed heavy text shadow */
+        
+        /* Text Wrapping Properties */
+        white-space: normal;
+        max-width: 120px;
+        text-align: center;
+        line-height: 1.2;
+        
         display: none;
         pointer-events: none;
       }
