@@ -470,12 +470,12 @@
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_puskesmas" /> Puskesmas </label>
         <div id="legend_puskesmas" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #41b6c4">H</span>Puskesmas</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #1a9850">H</span>Puskesmas</div>
         </div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_klinik" /> Klinik </label>
         <div id="legend_klinik" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #a1dab4">H</span>Klinik</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #a6d96a">H</span>Klinik</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
@@ -512,7 +512,7 @@
           </div>
           <div class="legend-item">
              <span class="legend-symbol sym-hexagon">
-               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#c51b7d" stroke="#cccccc" stroke-width="2"/></svg>
+               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#7fbc41" stroke="#cccccc" stroke-width="2"/></svg>
              </span>Pasar Non Harian
           </div>
         </div>
@@ -634,7 +634,8 @@
       function checkZoomForLabels() {
         var z = map.getZoom();
         var container = map.getContainer();
-        if (z >= 17) container.classList.add("show-labels");
+        // Updated zoom level threshold from 17 to 15
+        if (z >= 15) container.classList.add("show-labels");
         else container.classList.remove("show-labels");
       }
       map.on("zoomend", checkZoomForLabels);
@@ -697,8 +698,8 @@
         if (k.includes("rsu")) return "#253494"; 
         return "#2c7fb8"; 
       }
-      function getPuskesmasColor(ket) { return "#41b6c4"; } 
-      function getKlinikColor(ket) { return "#a1dab4"; } 
+      function getPuskesmasColor(ket) { return "#1a9850"; } // Changed to #1a9850
+      function getKlinikColor(ket) { return "#a6d96a"; }    // Changed to #a6d96a
 
       // 3. PENDIDIKAN
       function getSekolahColor(ket) {
@@ -722,7 +723,7 @@
         if (!ket) return "#c51b7d";
         var k = String(ket).toLowerCase();
         if (k.includes("harian") && !k.includes("non")) return "#8e0152"; // Dark Pink
-        return "#c51b7d"; // Pink
+        return "#7fbc41"; // Changed non-daily to #7fbc41
       }
 
       // INDUSTRI = DIAMOND (Updated Colors)
