@@ -284,11 +284,7 @@
         text-transform: none !important;
         text-shadow: none;
         
-        /* REVISI: white-space: nowrap + <br> 
-           Ini memaksa browser untuk TIDAK memecah baris sendiri,
-           sehingga pemecahan baris murni dikendalikan oleh tag <br>
-           yang kita suntikkan setiap 2 kata.
-        */
+        /* white-space: nowrap + <br> logic for wrapping */
         white-space: nowrap; 
         
         text-align: center;
@@ -1053,7 +1049,38 @@
         updateTable();
       });
 
-      // --- Administrative Search Logic (RESTORED) ---
+      // --- Tools Listeners (RESTORED) ---
+      document.getElementById("getLocationBtn").addEventListener("click", function () {
+        if (!navigator.geolocation) {
+          alert("Geolocation tidak tersedia di browser ini.");
+          return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = "Locating...";
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            var lat = pos.coords.latitude, lon = pos.coords.longitude;
+            map.setView([lat, lon], 16);
+            var m = L.circleMarker([lat, lon], { radius: 8, color: "#337ab7" }).addTo(map);
+            m.bindPopup("<b>Your location</b>").openPopup();
+            setTimeout(function () { if (map && m) map.removeLayer(m); }, 10000);
+            btn.disabled = false;
+            btn.textContent = "Get my location";
+          },
+          function (err) {
+            alert("Gagal mendapatkan lokasi: " + (err.message || "permission denied"));
+            btn.disabled = false;
+            btn.textContent = "Get my location";
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+      document.getElementById("zoomInBtn").addEventListener("click", function () { map.zoomIn(); });
+      document.getElementById("zoomOutBtn").addEventListener("click", function () { map.zoomOut(); });
+
+
+      // --- Administrative Search Logic (FULL RESTORE) ---
       var adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
       var adminLayerLevels = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
 
@@ -1068,6 +1095,7 @@
       }
 
       async function loadAdminGeojson(key, url, level) {
+        // Try multiple paths to ensure robustness
         var candidates = [url, "data/" + url];
         if(adminLayers[key]) {
            try { map.removeLayer(adminLayers[key]); } catch(e){}
@@ -1091,7 +1119,7 @@
              return layer;
           } catch(e){}
         }
-        alert("Gagal memuat layer admin: " + key);
+        throw new Error("Gagal memuat layer admin: " + key);
       }
 
       function keyForLevel(level) {
@@ -1107,7 +1135,17 @@
         return (props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "").toString();
       }
 
-      // UI Logic for Admin Search
+      // Helper for debounce
+      function debounce(fn, wait) {
+        var t;
+        return function () {
+          var args = arguments;
+          clearTimeout(t);
+          t = setTimeout(function () { fn.apply(null, args); }, wait);
+        };
+      }
+
+      // UI Logic for Admin Search (Autocomplete + Zoom)
       (function () {
         var searchContainer = document.getElementById("admin_search_container");
         searchContainer.innerHTML =
@@ -1121,7 +1159,7 @@
           "</select>" +
           '<label style="display:block;margin-top:8px; font-weight:600;">Nama wilayah</label>' +
           '<div style="position:relative">' +
-          '<input id="search_admin_query" type="text" autocomplete="off" placeholder="Masukkan nama..." style="width:100%; padding:6px; box-sizing:border-box" />' +
+          '<input id="search_admin_query" type="text" autocomplete="off" placeholder="Ketik nama..." style="width:100%; padding:6px; box-sizing:border-box" />' +
           '<div id="admin_suggestions" style="position:absolute; left:0; right:0; top:40px; background:#fff; border:1px solid #ddd; max-height:180px; overflow:auto; display:none; z-index:2000;"></div>' +
           "</div>" +
           '<div style="display:flex; gap:8px; margin-top:8px;">' +
@@ -1134,6 +1172,78 @@
         var queryInput = document.getElementById("search_admin_query");
         var highlightLayer = null;
 
+        // 1. Get unique names from a layer
+        function getNamesFromLayer(key) {
+          return new Promise(function (resolve, reject) {
+            var layer = adminLayers[key];
+            if (!layer) return reject(new Error("Layer not loaded"));
+            var set = {};
+            var list = [];
+            layer.eachLayer(function (l) {
+              var name = matchName(l.feature.properties);
+              if (!name) return;
+              var n = String(name).trim();
+              if (n && !set[n.toLowerCase()]) {
+                set[n.toLowerCase()] = true;
+                list.push(n);
+              }
+            });
+            resolve(list.sort((a,b)=>a.localeCompare(b)));
+          });
+        }
+
+        // 2. Autocomplete Logic
+        function showSuggestions(arr) {
+          if (!arr || arr.length === 0) {
+            suggestionBox.style.display = "none";
+            suggestionBox.innerHTML = "";
+            return;
+          }
+          suggestionBox.innerHTML = "";
+          var max = Math.min(arr.length, 10);
+          for (var i = 0; i < max; i++) {
+            var item = document.createElement("div");
+            item.style.padding = "6px 8px";
+            item.style.borderBottom = "1px solid #f1f1f1";
+            item.style.cursor = "pointer";
+            item.textContent = arr[i];
+            (function(val){
+              item.onclick = function() {
+                queryInput.value = val;
+                suggestionBox.style.display = "none";
+                document.getElementById("btn_admin_search").click();
+              };
+            })(arr[i]);
+            suggestionBox.appendChild(item);
+          }
+          suggestionBox.style.display = "block";
+        }
+
+        function updateSuggestionsForQuery(q) {
+           var level = document.getElementById("search_admin_level").value;
+           var key = keyForLevel(level);
+           
+           // Ensure layer is loaded first to get names
+           var promiseLayer = adminLayers[key] 
+               ? Promise.resolve() 
+               : loadAdminGeojson(key, urlForKey(key), level);
+
+           promiseLayer.then(() => getNamesFromLayer(key)).then(function(list){
+               if(!q) { suggestionBox.style.display="none"; return; }
+               var mq = q.toLowerCase();
+               var filtered = list.filter(s => s.toLowerCase().indexOf(mq) !== -1);
+               showSuggestions(filtered);
+           }).catch(console.warn);
+        }
+
+        // Debounced input handler
+        var debouncedUpdate = debounce(function () {
+          updateSuggestionsForQuery(queryInput.value.trim());
+        }, 300);
+        queryInput.addEventListener("input", debouncedUpdate);
+        queryInput.addEventListener("blur", function(){ setTimeout(()=>suggestionBox.style.display="none", 200); });
+
+        // 3. Search & Highlight Logic
         function searchInLayer(key, q) {
           return new Promise(function (resolve, reject) {
             var layer = adminLayers[key];
@@ -1157,17 +1267,21 @@
              return;
            }
            
-           // Highlight first match zoom
+           // Highlight & Zoom to all matches
            if(highlightLayer) map.removeLayer(highlightLayer);
            var fc = { type: "FeatureCollection", features: matches.map(m=>m.feature) };
            highlightLayer = L.geoJSON(fc, { style: {color:"#ff7800", weight:4, fill:false} }).addTo(map);
            try { map.fitBounds(highlightLayer.getBounds()); } catch(e){}
 
+           // List items
            matches.forEach(function (m, idx) {
              var row = document.createElement("div");
              row.style.padding = "6px";
              row.style.borderBottom = "1px solid #eee";
+             row.style.cursor = "pointer";
              row.innerHTML = "<b>" + (idx + 1) + "</b> " + m.name;
+             
+             // Zoom to specific item on click
              row.onclick = function(){
                 var b = L.geoJSON(m.feature).getBounds();
                 map.fitBounds(b);
@@ -1185,7 +1299,7 @@
           if(!adminLayers[key]) {
              loadAdminGeojson(key, urlForKey(key), level).then(function(){
                 return searchInLayer(key, q);
-             }).then(showResultsList);
+             }).then(showResultsList).catch(err => alert(err));
           } else {
              searchInLayer(key, q).then(showResultsList);
           }
