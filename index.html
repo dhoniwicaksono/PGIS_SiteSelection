@@ -327,8 +327,8 @@
 
       <div class="small">Klik peta untuk menambahkan titik. Isi atribut di form, lalu tekan <b>Save Point</b>. Minimal <b>10 titik</b> per responden direkomendasikan.</div>
 
-      <label>Respondent ID</label>
-      <input type="text" id="respondent_id" placeholder="e.g. R01" />
+      <label>Respondent ID <span style="color:red">*</span></label>
+      <input type="text" id="respondent_id" placeholder="Isikan identitas anda" />
 
       <label>Stakeholder Group</label>
       <select id="stakeholder_group">
@@ -338,8 +338,8 @@
         <option value="Lainnya">Lainnya</option>
       </select>
 
-      <label>Mapping Object</label>
-      <input type="text" id="mapping_object" placeholder="contoh: Pendidikan" />
+      <label>Mapping Object <span style="color:red">*</span></label>
+      <input type="text" id="mapping_object" placeholder="Contoh: Perdagangan-Jasa" />
 
       <label>Point ID (optional)</label>
       <input type="text" id="point_id" placeholder="auto: R01_P1" />
@@ -1022,6 +1022,21 @@
         });
       }
 
+      function resetFormFields() {
+        if (pointIdEl) {
+          pointIdEl.value = "";
+          pointIdEl.removeAttribute("data-lat");
+          pointIdEl.removeAttribute("data-lon");
+        }
+        if (reasonEl) reasonEl.value = "";
+        if (mapSourceEl) mapSourceEl.value = "webGIS";
+        if (accuracyEl) accuracyEl.value = "";
+        // Optional: clear mapping_object? The request says "reset whatever is written in the form".
+        // But usually we don't clear Respondent ID as it's session-based.
+        // We will clear mapping_object to be safe as per "reset whatever is written" instruction for a fresh start.
+        if (mappingObjectEl) mappingObjectEl.value = "";
+      }
+
       // Map Click Handler (Enhanced)
       map.on("click", function (e) {
         if (tempMarker) map.removeLayer(tempMarker);
@@ -1069,9 +1084,21 @@
         }
       });
 
-      // Save Point Handler (Enhanced)
+      // Save Point Handler (Enhanced with Validation)
       document.getElementById("savePointBtn").addEventListener("click", function() {
         var rid = currentRespondentId();
+        var mo = mappingObjectEl ? mappingObjectEl.value.trim() : "";
+
+        // VALIDATION: Mandatory Fields
+        if (!rid) {
+           alert("Respondent ID wajib diisi!");
+           return; 
+        }
+        if (!mo) {
+           alert("Mapping Object wajib diisi!");
+           return;
+        }
+
         if (!pointIdEl || !pointIdEl.dataset.lat || !pointIdEl.dataset.lon) {
            alert("Silakan klik peta untuk memilih lokasi terlebih dahulu.");
            return; 
@@ -1091,7 +1118,7 @@
         var rec = {
            respondent_id: rid || "",
            stakeholder_group: stakeholderEl ? stakeholderEl.value : "",
-           mapping_object: mappingObjectEl ? (mappingObjectEl.value ? mappingObjectEl.value.trim() : "") : "",
+           mapping_object: mo,
            point_id: pid,
            latitude: lat,
            longitude: lon,
@@ -1112,14 +1139,24 @@
         
         if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
         
-        // Reset specific fields
-        pointIdEl.value = "";
-        pointIdEl.removeAttribute("data-lat");
-        pointIdEl.removeAttribute("data-lon");
+        // Reset specific fields (keep Respondent ID for flow)
+        if (pointIdEl) {
+          pointIdEl.value = "";
+          pointIdEl.removeAttribute("data-lat");
+          pointIdEl.removeAttribute("data-lon");
+        }
         if (reasonEl) reasonEl.value = "";
         if (accuracyEl) accuracyEl.value = "";
         
         updatePointsUI();
+      });
+      
+      // Clear Form Listener (New Feature)
+      document.getElementById("clearFormBtn").addEventListener("click", function() {
+        if(confirm("Apakah Anda yakin ingin membersihkan form? Data yang belum disimpan di form akan hilang.")) {
+            resetFormFields();
+            if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+        }
       });
 
       function updatePointsUI() {
