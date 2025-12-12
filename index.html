@@ -442,9 +442,12 @@
           <div class="legend-item"><span class="legend-symbol sym-h" style="color: #1a9850">H</span>Puskesmas</div>
         </div>
 
+        <!-- REVISI KLINIK -->
         <label class="ctrl-label"> <input type="checkbox" id="layer_klinik" /> Klinik </label>
         <div id="legend_klinik" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #a6d96a">H</span>Klinik</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #00441b">H</span>Klinik Umum</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #006d2c">H</span>Klinik Gigi</div>
+          <div class="legend-item"><span class="legend-symbol sym-h" style="color: #238b45">H</span>Lainnya</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
@@ -689,7 +692,15 @@
         return "#2c7fb8"; 
       }
       function getPuskesmasColor(ket) { return "#1a9850"; } 
-      function getKlinikColor(ket) { return "#a6d96a"; }    
+      
+      // REVISI KLINIK
+      function getKlinikColor(ket) { 
+        if (!ket) return "#238b45"; // Default Lainnya
+        var k = String(ket).toLowerCase();
+        if (k.includes("umum")) return "#00441b";
+        if (k.includes("gigi")) return "#006d2c";
+        return "#238b45"; // Lainnya
+      }    
 
       // 3. PENDIDIKAN
       function getSekolahColor(ket) {
