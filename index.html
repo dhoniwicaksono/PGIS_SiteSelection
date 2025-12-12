@@ -413,8 +413,8 @@
       <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Layers</h4>
       <div style="margin-bottom: 12px">
         
-        <!-- 1. PEMERINTAHAN (KOTAK) -->
-        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah (Kotak)</div>
+        <!-- 1. PEMERINTAHAN (Revised: Removed (Kotak)) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah</div>
         <label class="ctrl-label"> <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan </label>
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item"><span class="legend-symbol sym-square" style="background: #e31a1c"></span>Kantor Gubernur</div>
@@ -425,8 +425,8 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 2. KESEHATAN (H) -->
-        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">2. Fasilitas Kesehatan (Huruf H)</div>
+        <!-- 2. KESEHATAN (Revised: Removed (Huruf H)) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">2. Fasilitas Kesehatan</div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_rs" /> Rumah Sakit </label>
         <div id="legend_rs" style="margin-left: 24px; margin-top: 4px; display: none">
@@ -446,8 +446,8 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 3. PENDIDIKAN (LINGKARAN) -->
-        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">3. Fasilitas Pendidikan (Lingkaran)</div>
+        <!-- 3. PENDIDIKAN (Revised: Removed (Lingkaran)) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">3. Fasilitas Pendidikan</div>
         <label class="ctrl-label">
           <input type="checkbox" id="layer_sekolah" /> Sekolah (SD/SMP/SMA)
           <span style="font-size: 10px; background: #eee; padding: 1px 3px; border-radius: 3px; margin-left: 4px;">Cluster</span>
@@ -466,10 +466,10 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 4. EKONOMI (PASAR = HEXAGON) -->
+        <!-- 4. EKONOMI (Revised: Removed geometry descriptions) -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">4. Fasilitas Ekonomi</div>
 
-        <label class="ctrl-label"> <input type="checkbox" id="layer_pasar" /> Pasar Tradisional (Hexagon) </label>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_pasar" /> Pasar Tradisional </label>
         <div id="legend_pasar" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item">
              <span class="legend-symbol sym-hexagon">
@@ -483,7 +483,7 @@
           </div>
         </div>
 
-        <label class="ctrl-label"> <input type="checkbox" id="layer_ibm" /> Industri / IBM (Diamond) </label>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_ibm" /> Industri / IBM </label>
         <div id="legend_ibm" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #b2df8a"></span>Makanan & Minuman</div>
           <div class="legend-item"><span class="legend-symbol sym-diamond" style="background: #fb9a99"></span>Tekstil & Kulit</div>
@@ -497,8 +497,8 @@
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
-        <!-- 5. PARIWISATA (BINTANG) -->
-        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">5. Pariwisata (Bintang)</div>
+        <!-- 5. PARIWISATA (Revised: Removed (Bintang)) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">5. Pariwisata</div>
 
         <label class="ctrl-label"> <input type="checkbox" id="layer_dtw" /> Objek Wisata (DTW) </label>
         <div id="legend_dtw" style="margin-left: 24px; margin-top: 4px; display: none">
@@ -618,13 +618,14 @@
       map.on("zoomend", checkZoomForLabels);
       checkZoomForLabels();
 
-      // --- Helper: Format Label Text (3 Words per Line) ---
+      // --- Helper: Format Label Text (2 Words per Line - Updated) ---
       function formatLabelText(text) {
         if (!text) return "";
         var words = text.split(" ");
         var lines = [];
-        for (var i = 0; i < words.length; i += 3) {
-          lines.push(words.slice(i, i + 3).join(" "));
+        // Updated loop to increment by 2
+        for (var i = 0; i < words.length; i += 2) {
+          lines.push(words.slice(i, i + 2).join(" "));
         }
         return lines.join("<br>");
       }
