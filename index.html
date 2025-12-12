@@ -415,14 +415,14 @@
       <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Layers</h4>
       <div style="margin-bottom: 12px">
         
-        <!-- 1. PEMERINTAHAN -->
+        <!-- 1. PEMERINTAHAN (UPDATED: Grayscale) -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah</div>
         <label class="ctrl-label"> <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan </label>
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #e31a1c"></span>Kantor Gubernur</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fd8d3c"></span>Kantor Bupati/ Walikota</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #a6611a"></span>Kantor Kecamatan/ Kemantren</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #dfc27d"></span>Kantor Desa/ Kelurahan/ Kalurahan</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #252525"></span>Kantor Gubernur</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #636363"></span>Kantor Bupati/ Walikota</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #969696"></span>Kantor Kecamatan/ Kemantren</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #cccccc"></span>Kantor Desa/ Kelurahan/ Kalurahan</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
@@ -669,15 +669,15 @@
 
       // --- COLOR & STYLE FUNCTIONS (Preserved from Custom Symbols) ---
 
-      // 1. PEMERINTAHAN
+      // 1. PEMERINTAHAN (UPDATED: Grayscale)
       function getGovColor(kategori) {
-        if (!kategori) return "#dfc27d";
+        if (!kategori) return "#cccccc";
         var k = String(kategori).toLowerCase();
         if (k.includes("gubernur") || k.includes("diy")) return "#252525"; 
         if (k.includes("bupati") || k.includes("walikota")) return "#636363"; 
         if (k.includes("camat") || k.includes("kemantren") || k.includes("kecamatan")) return "#969696"; 
         if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan") || k.includes("lurah")) return "#cccccc"; 
-        return "#dfc27d"; 
+        return "#cccccc"; 
       }
 
       // 2. KESEHATAN
