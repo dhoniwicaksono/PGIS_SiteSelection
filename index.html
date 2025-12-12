@@ -417,11 +417,10 @@
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah (Kotak)</div>
         <label class="ctrl-label"> <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan </label>
         <div id="legend_kantor" style="margin-left: 24px; margin-top: 4px; display: none">
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #a50f15"></span>Gubernur / DIY</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #de2d26"></span>Bupati / Walikota</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fb6a4a"></span>Kecamatan</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fcae91"></span>Kelurahan / Desa</div>
-          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fee5d9"></span>Lainnya</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #e31a1c"></span>Kantor Gubernur</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #fd8d3c"></span>Kantor Bupati/ Walikota</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #a6611a"></span>Kantor Kecamatan/ Kemantren</div>
+          <div class="legend-item"><span class="legend-symbol sym-square" style="background: #dfc27d"></span>Kantor Desa/ Kelurahan/ Kalurahan</div>
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
@@ -669,15 +668,24 @@
 
       // --- COLOR & STYLE FUNCTIONS ---
 
-      // 1. PEMERINTAHAN
+      // 1. PEMERINTAHAN (Revised: Updated colors and classifications)
       function getGovColor(kategori) {
-        if (!kategori) return "#fc9272";
+        if (!kategori) return "#dfc27d";
         var k = String(kategori).toLowerCase();
-        if (k.includes("gubernur") || k.includes("diy")) return "#a50f15"; 
-        if (k.includes("bupati") || k.includes("walikota")) return "#de2d26"; 
-        if (k.includes("camat") || k.includes("kemantren")) return "#fb6a4a"; 
-        if (k.includes("kelurahan") || k.includes("desa")) return "#fcae91"; 
-        return "#fee5d9"; 
+        
+        // Kantor Gubernur
+        if (k.includes("gubernur") || k.includes("diy")) return "#e31a1c"; 
+        
+        // Kantor Bupati/ Walikota
+        if (k.includes("bupati") || k.includes("walikota")) return "#fd8d3c"; 
+        
+        // Kantor Kecamatan/ Kemantren
+        if (k.includes("camat") || k.includes("kemantren") || k.includes("kecamatan")) return "#a6611a"; 
+        
+        // Kantor Desa/ Kelurahan/ Kalurahan
+        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan") || k.includes("lurah")) return "#dfc27d"; 
+        
+        return "#dfc27d"; 
       }
 
       // 2. KESEHATAN
@@ -687,8 +695,8 @@
         if (k.includes("rsu")) return "#253494"; 
         return "#2c7fb8"; 
       }
-      function getPuskesmasColor(ket) { return "#1a9850"; } // Changed to #1a9850
-      function getKlinikColor(ket) { return "#a6d96a"; }    // Changed to #a6d96a
+      function getPuskesmasColor(ket) { return "#1a9850"; } 
+      function getKlinikColor(ket) { return "#a6d96a"; }    
 
       // 3. PENDIDIKAN
       function getSekolahColor(ket) {
