@@ -339,10 +339,11 @@
       </select>
 
       <label>Mapping Object <span style="color:red">*</span></label>
+      <!-- REVISI: Point ID akan bergantung pada field ini -->
       <input type="text" id="mapping_object" placeholder="Contoh: Perdagangan-Jasa" />
 
-      <label>Point ID (optional)</label>
-      <input type="text" id="point_id" placeholder="auto: R01_P1" />
+      <label>Point ID (auto)</label>
+      <input type="text" id="point_id" placeholder="Auto: [Object]_[No]" readonly style="background-color: #f0f0f0; color: #555;" />
 
       <label>Reason (optional)</label>
       <textarea id="reason" rows="2" placeholder="Contoh: dekat jalan kolektor dan pasar"></textarea>
@@ -1037,6 +1038,34 @@
         if (mappingObjectEl) mappingObjectEl.value = "";
       }
 
+      // --- REVISI 1: AUTO GENERATE POINT ID ---
+      function updatePointIdPreview() {
+         var mo = mappingObjectEl ? mappingObjectEl.value.trim() : "";
+         if (!mo) {
+            pointIdEl.value = "";
+            return;
+         }
+         
+         // Hitung berapa point yg SUDAH ada dengan prefix mapping object yg sama
+         // Logic: cari point yang mapping_object-nya sama persis (case insensitive?)
+         // User bilang "nomor terisi otomatis", asumsi incremental
+         var count = 0;
+         allPoints.forEach(function(p){
+            if (p.mapping_object && p.mapping_object.toLowerCase() === mo.toLowerCase()) {
+               count++;
+            }
+         });
+         var nextIdx = count + 1;
+         
+         // Format: [MappingObject]_[No]
+         pointIdEl.value = mo + "_" + nextIdx;
+      }
+
+      // Listener saat Mapping Object diketik
+      if (mappingObjectEl) {
+         mappingObjectEl.addEventListener("input", updatePointIdPreview);
+      }
+
       // Map Click Handler (Enhanced)
       map.on("click", function (e) {
         if (tempMarker) map.removeLayer(tempMarker);
@@ -1051,32 +1080,8 @@
           }
         });
 
-        var rid = currentRespondentId() || "R?_";
-        var idx = 1;
-        if (currentRespondentId()) idx = pointsForRespondent(currentRespondentId()).length + 1;
-
-        if (pointIdEl) pointIdEl.value = rid + "_P" + idx;
-
-        // Auto-fill mapping object ID
-        try {
-          if (mappingObjectEl) {
-            var val = mappingObjectEl.value ? mappingObjectEl.value.trim() : "";
-            if (!val) {
-              var mo = rid && rid !== "R?_" ? rid + "_MO" + idx : "MO_P" + (allPoints.length + 1);
-              mappingObjectEl.value = mo;
-            } else {
-              // Increment index if pattern matches
-              var m = val.match(/^(.*?)[_\-]?0*(\d+)$/);
-              if(m) {
-                 var base = m[1];
-                 // logic to find next index for this base... simplified here to just increment
-                 // For true robustness use the helper from uploaded file, here we keep it simple but effective
-                 var next = idx; 
-                 mappingObjectEl.value = base + "_" + (next < 10 ? "0" + next : next);
-              }
-            }
-          }
-        } catch (err) {}
+        // Trigger update ID saat klik peta (just in case input sudah ada isinya)
+        updatePointIdPreview();
 
         if (pointIdEl) {
           pointIdEl.dataset.lat = e.latlng.lat;
@@ -1106,12 +1111,22 @@
         
         var lat = parseFloat(pointIdEl.dataset.lat);
         var lon = parseFloat(pointIdEl.dataset.lon);
-        var pid = pointIdEl.value ? pointIdEl.value.trim() : (rid ? rid + "_P" + (pointsForRespondent(rid).length + 1) : "P" + (allPoints.length + 1));
 
-        // Duplicate Check
-        if (allPoints.some(function (x) { return x.point_id === pid && x.respondent_id === rid; })) {
-            pid = pid + "_" + (new Date().getTime() % 10000);
-        }
+        // RE-CALCULATE ID TO BE SAFE (mencegah duplikat jika user tidak mengetik ulang)
+        // Atau gunakan nilai yang ada di input jika user sudah melihatnya
+        // Sesuai request: "Nomor dapat terisi secara otomatis" -> Kita percaya fungsi updatePointIdPreview()
+        // Namun, jika user klik save berkali-kali tanpa ubah input, kita harus pastikan unik?
+        // Mari kita hitung ulang index saat save untuk jaminan unik.
+        var count = 0;
+        allPoints.forEach(function(p){
+            if (p.mapping_object && p.mapping_object.toLowerCase() === mo.toLowerCase()) {
+               count++;
+            }
+        });
+        var pid = mo + "_" + (count + 1);
+        
+        // Update input field visual
+        pointIdEl.value = pid;
 
         var acc = accuracyEl && accuracyEl.value ? accuracyEl.value.trim() : "";
 
@@ -1148,6 +1163,8 @@
         if (reasonEl) reasonEl.value = "";
         if (accuracyEl) accuracyEl.value = "";
         
+        // Update next ID preview immediately
+        updatePointIdPreview();
         updatePointsUI();
       });
       
@@ -1161,10 +1178,9 @@
 
       function updatePointsUI() {
         var rid = currentRespondentId();
-        var pts = rid ? pointsForRespondent(rid) : []; // Show specific or empty if no ID? Uploaded file shows specific.
-        // If no rid, showing empty is safer to avoid confusion, or show all. Uploaded file logic filters by RID.
+        var pts = rid ? pointsForRespondent(rid) : []; 
         
-        // Fallback: if no rid entered, show all (or none). Let's show points for current RID if exists, else none.
+        // Fallback: if no rid entered, show all (or none).
         if(!rid && allPoints.length > 0) pts = allPoints; 
         
         pointsCountEl.textContent = pts.length + " points";
@@ -1188,6 +1204,7 @@
             if(allPoints[idx].marker) map.removeLayer(allPoints[idx].marker);
             allPoints.splice(idx,1);
             updatePointsUI();
+            updatePointIdPreview(); // Update ID next jika ada yg dihapus (optional, tp baik utk konsistensi)
         }
       };
 
@@ -1209,6 +1226,44 @@
         document.body.removeChild(link);
       }
 
+      // REVISI 2: Format Nama File Export
+      function getExportFilename(extension) {
+         var rid = currentRespondentId() || "NoID";
+         
+         // Timestamp data terakhir (atau sekarang jika kosong)
+         var lastTsStr = "";
+         var lastMO = "";
+         
+         if (allPoints.length > 0) {
+            var lastPt = allPoints[allPoints.length - 1];
+            // Format timestamp from ISO to readable compact: YYYYMMDD-HHmm
+            var d = new Date(lastPt.timestamp);
+            var yyyy = d.getFullYear();
+            var mm = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            var hh = String(d.getHours()).padStart(2, '0');
+            var min = String(d.getMinutes()).padStart(2, '0');
+            lastTsStr = yyyy + mm + dd + "-" + hh + min;
+            
+            lastMO = lastPt.mapping_object || "NoObject";
+         } else {
+            var d = new Date();
+            var yyyy = d.getFullYear();
+            var mm = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            var hh = String(d.getHours()).padStart(2, '0');
+            var min = String(d.getMinutes()).padStart(2, '0');
+            lastTsStr = yyyy + mm + dd + "-" + hh + min;
+            lastMO = "NoData";
+         }
+         
+         // Sanitasi nama file (hapus karakter aneh)
+         var safeMO = lastMO.replace(/[^a-zA-Z0-9-_]/g, "");
+         var safeRID = rid.replace(/[^a-zA-Z0-9-_]/g, "");
+         
+         return safeRID + "_" + lastTsStr + "_" + safeMO + extension;
+      }
+
       document.getElementById("exportCsv").addEventListener("click", function() {
         var rid = currentRespondentId();
         var arr = rid ? pointsForRespondent(rid) : allPoints;
@@ -1225,7 +1280,7 @@
           lines.push(row.join(","));
         });
         
-        var fname = "points_" + (rid||"all") + ".csv";
+        var fname = getExportFilename(".csv");
         downloadText(fname, lines.join("\n"), "text/csv;charset=utf-8;");
       });
 
@@ -1247,7 +1302,9 @@
               geometry: { type: "Point", coordinates: [p.longitude, p.latitude] }
             });
         });
-        downloadText("points_" + (rid||"all") + ".geojson", JSON.stringify(gj), "application/geo+json;charset=utf-8;");
+        
+        var fname = getExportFilename(".geojson");
+        downloadText(fname, JSON.stringify(gj), "application/geo+json;charset=utf-8;");
       });
 
       document.getElementById("clearAll").addEventListener("click", function() {
@@ -1255,6 +1312,7 @@
             allPoints.forEach(p => map.removeLayer(p.marker));
             allPoints = [];
             updatePointsUI();
+            updatePointIdPreview();
         }
       });
       
