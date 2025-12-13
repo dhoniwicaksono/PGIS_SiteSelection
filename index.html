@@ -12,6 +12,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
+    <!-- Leaflet JS (MOVED HERE: Must be loaded before plugins like Esri Leaflet) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Leaflet MarkerCluster JS (MOVED HERE) -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
     <!-- Turf.js for Spatial Analysis (Buffer & Filtering) -->
     <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
 
@@ -377,10 +383,47 @@
         background: transparent;
         border: none;
       }
+
+      /* Loading Indicator Style */
+      #loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        display: none; /* Hidden by default */
+        font-weight: bold;
+        color: #333;
+        text-align: center;
+        border: 1px solid #ccc;
+      }
+      .spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid #333;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
     <div id="map"></div>
+    
+    <!-- Loading Indicator Element -->
+    <div id="loading-indicator">
+      <span class="spinner"></span>Memuat Data Layer...
+    </div>
 
     <!-- LEFT SIDEBAR: UPDATED WITH UPLOADED COLLECTOR FEATURES -->
     <div id="sidebar" class="mobile-visible">
@@ -619,9 +662,6 @@
       <button id="tab-form" class="active">Form Data</button>
       <button id="tab-layers">Layers & Tools</button>
     </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
     <script>
       // --- Mobile UI & Tabs ---
@@ -1232,19 +1272,106 @@
 
       // --- 6. BENCANA (BNPB - ESRI) ---
       var bnpbTsunamiLayer = null;
+      var hasErrorShown = false; // Flag to prevent multiple alerts
+
+      // Create a specific Pane for Disaster Layers to ensure they are ABOVE basemaps but BELOW markers
+      map.createPane('bencanaPane');
+      map.getPane('bencanaPane').style.zIndex = 300; // Above TilePane (200), below OverlayPane (400) & MarkerPane (600)
+      map.getPane('bencanaPane').style.pointerEvents = 'none'; // Allow clicks to pass through to map
+
       document.getElementById("layer_bencana_tsunami").addEventListener("change", function(e) {
+        var loader = document.getElementById("loading-indicator");
+        
         if (e.target.checked) {
+          // Check dependency
+          if (typeof L.esri === 'undefined') {
+            alert("Library Esri Leaflet belum siap. Mohon tunggu sejenak atau refresh halaman.");
+            e.target.checked = false;
+            return;
+          }
+
           // Initialize if null
           if (!bnpbTsunamiLayer) {
             bnpbTsunamiLayer = L.esri.imageMapLayer({
+              // UPDATED SOURCE (Confirmed by User)
               url: 'https://gis.bnpb.go.id/server/rest/services/inarisk/layer_bahaya_tsunami/ImageServer',
-              opacity: 0.7
+              opacity: 0.7,
+              attribution: 'BNPB InaRisk',
+              pane: 'bencanaPane' // FORCE LAYER INTO OUR CUSTOM HIGH-ZINDEX PANE
+            });
+
+            // Feedback Events (Loading Indicator)
+            bnpbTsunamiLayer.on('loading', function() {
+              loader.style.display = 'block';
+              document.body.style.cursor = 'wait';
+            });
+            
+            bnpbTsunamiLayer.on('load', function() {
+              loader.style.display = 'none';
+              document.body.style.cursor = 'default';
+            });
+
+            // ERROR HANDLING: PREVENT SPAM & CIRCULAR OBJECT ERROR
+            bnpbTsunamiLayer.on('error', function(ev) {
+              loader.style.display = 'none';
+              document.body.style.cursor = 'default';
+              
+              // Extract meaningful message, avoid circular JSON error
+              var msg = "Unknown error";
+              if (ev && ev.error && ev.error.message) msg = ev.error.message;
+              else if (ev && ev.message) msg = ev.message;
+
+              console.warn("BNPB Layer Issue: " + msg);
+
+              if (!hasErrorShown) {
+                alert("Gagal memuat layer BNPB (" + msg + "). Layer mungkin tidak tersedia saat ini.");
+                hasErrorShown = true;
+                
+                // Uncheck the box visually
+                document.getElementById("layer_bencana_tsunami").checked = false;
+
+                // FIX: Use setTimeout to remove layer asynchronously.
+                // Removing the layer immediately while the error event is still firing 
+                // causes the 'Cannot read properties of null' error in Leaflet/Esri internals.
+                setTimeout(function() {
+                    if(bnpbTsunamiLayer && map.hasLayer(bnpbTsunamiLayer)) {
+                        map.removeLayer(bnpbTsunamiLayer);
+                    }
+                    // Reset variable so we try a fresh connection next time
+                    bnpbTsunamiLayer = null; 
+                }, 100);
+              }
             });
           }
+          
           bnpbTsunamiLayer.addTo(map);
+          // bnpbTsunamiLayer.bringToFront(); // No longer needed because we use custom Pane Z-Index
+
+          // UX IMPROVEMENT: Auto-pan to South Coast if user is currently in Jogja City area
+          // This ensures they see the data immediately instead of staring at empty city map
+          var center = map.getCenter();
+          if (center.lat > -7.9 && center.lat < -7.0 && center.lng > 110.0 && center.lng < 111.0) {
+             map.setView([-8.02, 110.35], 13); // Coordinate near Parangtritis
+             
+             // Show loader momentarily during pan/fetch
+             loader.style.display = 'block';
+             
+             // Use a small timeout to allow map to move before alerting
+             setTimeout(function() {
+               if (!hasErrorShown) {
+                  alert("Peta digeser ke pesisir selatan untuk menampilkan area Bahaya Tsunami.");
+               }
+             }, 500);
+          } else {
+             if (!hasErrorShown) {
+                alert("Layer Tsunami aktif. Silakan geser peta ke area pesisir pantai untuk melihat data.");
+             }
+          }
+
         } else {
           if (bnpbTsunamiLayer && map.hasLayer(bnpbTsunamiLayer)) {
             map.removeLayer(bnpbTsunamiLayer);
+            loader.style.display = 'none'; // Ensure hidden
           }
         }
       });
