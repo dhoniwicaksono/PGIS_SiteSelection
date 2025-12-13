@@ -415,6 +415,23 @@
       @keyframes spin {
         to { transform: rotate(360deg); }
       }
+      /* New CSS for gradient legend bar */
+      .legend-gradient {
+        height: 12px;
+        width: 100%;
+        margin-top: 4px;
+        /* REVERSED: Merah (Tinggi) ke Kiri, Hijau (Rendah) ke Kanan */
+        background: linear-gradient(to right, #d73027, #ffffbf, #1a9850); /* Red to Yellow to Green */
+        border: 1px solid #ccc;
+        border-radius: 3px;
+      }
+      .legend-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        margin-top: 2px;
+        color: #555;
+      }
     </style>
   </head>
   <body>
@@ -644,6 +661,17 @@
         <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_gempa" /> Bahaya Gempa Bumi </label>
         <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_longsor" /> Bahaya Tanah Longsor </label>
         <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_erupsi" /> Bahaya Erupsi Gunungapi </label>
+        
+        <!-- Legenda BNPB Baru -->
+        <div style="margin-top: 10px; padding: 4px 0;">
+             <div style="font-size: 11px; font-weight: 600; color: #333;">Tingkat Bahaya Umum (InaRISK)</div>
+             <div class="legend-gradient"></div>
+             <div class="legend-labels">
+                 <span style="color: #d73027;">Tinggi</span>
+                 <span>Sedang</span>
+                 <span style="color: #1a9850;">Rendah</span>
+             </div>
+        </div>
 
       </div>
 
