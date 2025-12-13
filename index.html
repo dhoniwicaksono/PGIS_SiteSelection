@@ -144,6 +144,11 @@
              font-size: 12px;
              display: block; /* Force the long text to the next line */
         }
+        
+        /* REVISI: Pindahkan kontrol Leaflet ke bawah agar tidak tertutup Topbar */
+        .leaflet-top.leaflet-left {
+            top: 60px !important; /* Move Leaflet controls down from the top */
+        }
 
 
         #sidebar,
@@ -2150,7 +2155,7 @@
             highlightLayer = null;
           }
           hideAllAdminLayers();
-          adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
+          adminLayers = { WADMPR: null, WADMKK: null, WADMCK: null, WADMKD: null };
 
           // --- NEW: CLEAR FILTER ---
           clearAdminFilter();
