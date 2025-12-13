@@ -32,6 +32,7 @@
         padding: 0;
       }
       #map {
+        /* Tambahkan padding-top untuk memastikan peta tidak tertutup Top Bar di mobile */
         height: 100%;
       }
       body {
@@ -61,10 +62,18 @@
       #topbar h1 {
         margin: 0;
         font-size: 16px;
-        font-weight: 800;
+        font-weight: 800; /* PETA */
         color: #333;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        line-height: 1.2; /* Better look on mobile wrapping */
+      }
+      
+      #topbar span {
+          font-weight: normal; /* (Participatory Evidence-Based Territorial Analytics) */
+          text-transform: none;
+          font-size: 14px;
+          color: #555;
       }
       
       /* Left sidebar (Form) */
@@ -116,7 +125,26 @@
           border-radius: 0;
           box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
           padding: 10px;
+          
+          /* Ensures Topbar does not interfere with map controls */
+          height: auto;
+          min-height: 38px;
+          z-index: 2500; /* Above Leaflet controls (z-index=1000) */
         }
+        
+        #map {
+            /* Add necessary space below the topbar */
+            padding-top: 55px; /* Adjust based on topbar height */
+        }
+        
+        #topbar h1 {
+             font-size: 14px;
+        }
+        #topbar span {
+             font-size: 12px;
+             display: block; /* Force the long text to the next line */
+        }
+
 
         #sidebar,
         #sidebarRight {
@@ -478,7 +506,7 @@
     
     <!-- TOP BAR / HEADER -->
     <div id="topbar">
-        <h1>PETA – Participatory Evidence-based Territorial Analytics</h1>
+        <h1>PETA <span style="font-weight: normal;">(Participatory Evidence-Based Territorial Analytics)</span></h1>
     </div>
 
     <!-- Loading Indicator Element -->
