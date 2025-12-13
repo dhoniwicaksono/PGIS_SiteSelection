@@ -829,11 +829,43 @@
       var activeLayerConfigs = {}; // Store config (shapeType, colorFunc) to re-render
       var currentFilterPoly = null; // Buffer polygon for filtering
 
+      // FIX: Helper to handle coordinate projection for filtering
+      function getNormalizedCoord(coords) {
+         // Check if Mercator (large values)
+         // Usually Mercator bounds are huge, so checking > 180 is safe for Lon/Lat
+         if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
+             var latlon = mercatorToLatLon(coords[0], coords[1]);
+             // mercatorToLatLon returns [lat, lon], Turf expects [lon, lat]
+             return [latlon[1], latlon[0]]; 
+         }
+         return [coords[0], coords[1]]; 
+      }
+
       function filterData(data, poly) {
          // Filter GeoJSON features based on polygon inclusion
          if (!data || !data.features) return data;
+         
+         // Safe check for Turf
+         if (typeof turf === 'undefined') {
+             console.warn("Turf.js not loaded");
+             return data;
+         }
+
          var filteredFeatures = data.features.filter(function(f) {
-             return turf.booleanPointInPolygon(f, poly);
+             if (!f.geometry || !f.geometry.coordinates) return false;
+
+             // Only handle Point for now (as facility layers are Points)
+             if (f.geometry.type === 'Point') {
+                 // NORMALIZE COORDINATES TO WGS84 BEFORE CHECK
+                 var norm = getNormalizedCoord(f.geometry.coordinates);
+                 var tempFeat = turf.point(norm);
+                 try {
+                    return turf.booleanPointInPolygon(tempFeat, poly);
+                 } catch(e) {
+                    return false;
+                 }
+             }
+             return false;
          });
          return { type: "FeatureCollection", features: filteredFeatures };
       }
@@ -967,6 +999,7 @@
       // --- FILTERING LOGIC ---
       function applyAdminFilter(feature) {
           // 1. Create Buffer 1km
+          // Make sure feature is valid WGS84 (Admin layers seem to be WGS84 based on loader)
           var buffered = turf.buffer(feature, 1, {units: 'kilometers'});
           currentFilterPoly = buffered;
 
