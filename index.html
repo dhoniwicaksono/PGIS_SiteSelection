@@ -15,6 +15,9 @@
     <!-- Turf.js for Spatial Analysis (Buffer & Filtering) -->
     <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
 
+    <!-- Esri Leaflet (Added for BNPB Layer) -->
+    <script src="https://unpkg.com/esri-leaflet@3.0.10/dist/esri-leaflet.js"></script>
+
     <style>
       html,
       body {
@@ -204,18 +207,55 @@
       .legend-symbol {
         display: inline-block;
         margin-right: 6px;
-        box-shadow: 0 0 1px rgba(0, 0, 0, 0.2); 
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
       }
-      
+
       /* Shape Classes (WebGIS Simbolisasi Baru) */
-      .sym-circle { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #cccccc; }
-      .sym-square { width: 12px; height: 12px; border-radius: 0; border: 2px solid #cccccc; }
-      .sym-diamond { width: 10px; height: 10px; transform: rotate(45deg); border: 2px solid #cccccc; margin-left: 2px; margin-right: 8px; }
-      .sym-hexagon { width: 14px; height: 14px; display: flex; justify-content: center; align-items: center; }
-      .sym-star { width: 14px; height: 14px; background: transparent; display: flex; justify-content: center; align-items: center; }
+      .sym-circle {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid #cccccc;
+      }
+      .sym-square {
+        width: 12px;
+        height: 12px;
+        border-radius: 0;
+        border: 2px solid #cccccc;
+      }
+      .sym-diamond {
+        width: 10px;
+        height: 10px;
+        transform: rotate(45deg);
+        border: 2px solid #cccccc;
+        margin-left: 2px;
+        margin-right: 8px;
+      }
+      .sym-hexagon {
+        width: 14px;
+        height: 14px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .sym-star {
+        width: 14px;
+        height: 14px;
+        background: transparent;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
       .sym-h {
-        width: 14px; height: 14px; background: transparent !important; box-shadow: none;
-        font-weight: 900; font-family: sans-serif; text-align: center; line-height: 14px; font-size: 14px;
+        width: 14px;
+        height: 14px;
+        background: transparent !important;
+        box-shadow: none;
+        font-weight: 900;
+        font-family: sans-serif;
+        text-align: center;
+        line-height: 14px;
+        font-size: 14px;
         text-shadow: -1px -1px 0 #cccccc, 1px -1px 0 #cccccc, -1px 1px 0 #cccccc, 1px 1px 0 #cccccc;
       }
 
@@ -252,9 +292,13 @@
       @media (max-width: 700px) {
         /* Hide some columns on mobile */
         table th:nth-child(5), table td:nth-child(5), /* Lon */
-        table th:nth-child(6), table td:nth-child(6)  /* Reason */
-        { display: none; }
-        .btn { font-size: 13px; padding: 8px 10px; }
+        table th:nth-child(6), table td:nth-child(6)  /* Reason */ {
+          display: none;
+        }
+        .btn {
+          font-size: 13px;
+          padding: 8px 10px;
+        }
       }
 
       .leaflet-control-layers {
@@ -269,35 +313,46 @@
         font-size: 11px;
         color: #111;
       }
-      .admin-label-prov { text-shadow: 0 0 8px #fff; font-weight: 700; }
-      .admin-label-kab { text-shadow: 0 0 6px #fff; }
-      .admin-label-kec { text-shadow: 0 0 4px #fff; }
-      .admin-label-desa { text-shadow: 0 0 2px #fff; }
-      
-      #admin_suggestions div:hover { background: #f5f8ff; }
+      .admin-label-prov {
+        text-shadow: 0 0 8px #fff;
+        font-weight: 700;
+      }
+      .admin-label-kab {
+        text-shadow: 0 0 6px #fff;
+      }
+      .admin-label-kec {
+        text-shadow: 0 0 4px #fff;
+      }
+      .admin-label-desa {
+        text-shadow: 0 0 2px #fff;
+      }
+
+      #admin_suggestions div:hover {
+        background: #f5f8ff;
+      }
 
       /* --- UPDATED LABEL STYLE (Text Wrapping) --- */
       .feature-label {
-        background: rgba(255, 255, 255, 0.75); 
+        background: rgba(255, 255, 255, 0.75);
         border: 1px solid rgba(0, 0, 0, 0.2);
         border-radius: 4px;
         padding: 1px 4px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 
         /* Default Font Size */
-        font-size: 9px; 
-        
+        font-size: 9px;
+
         font-weight: bold;
         color: #222;
         text-transform: none !important;
         text-shadow: none;
-        
+
         /* white-space: nowrap + <br> logic for wrapping */
-        white-space: nowrap; 
-        
+        white-space: nowrap;
+
         text-align: center;
         line-height: 1.2;
-        
+
         display: none;
         pointer-events: none;
       }
@@ -306,11 +361,17 @@
       }
 
       /* DYNAMIC FONT SIZES */
-      .map-zoom-15 .feature-label { font-size: 9px; }
-      .map-zoom-16 .feature-label { font-size: 10px; }
-      .map-zoom-17 .feature-label, 
+      .map-zoom-15 .feature-label {
+        font-size: 9px;
+      }
+      .map-zoom-16 .feature-label {
+        font-size: 10px;
+      }
+      .map-zoom-17 .feature-label,
       .map-zoom-18 .feature-label,
-      .map-zoom-19 .feature-label { font-size: 11px; }
+      .map-zoom-19 .feature-label {
+        font-size: 11px;
+      }
 
       .custom-div-icon {
         background: transparent;
@@ -330,7 +391,7 @@
 
       <div class="small">Klik peta untuk menambahkan titik. Isi atribut di form, lalu tekan <b>Save Point</b>. Minimal <b>10 titik</b> per responden direkomendasikan.</div>
 
-      <label>Respondent ID <span style="color:red">*</span></label>
+      <label>Respondent ID <span style="color: red">*</span></label>
       <input type="text" id="respondent_id" placeholder="Isikan identitas anda" />
 
       <label>Stakeholder Group</label>
@@ -341,11 +402,11 @@
         <option value="Lainnya">Lainnya</option>
       </select>
 
-      <label>Mapping Object <span style="color:red">*</span></label>
+      <label>Mapping Object <span style="color: red">*</span></label>
       <input type="text" id="mapping_object" placeholder="Contoh: Perdagangan-Jasa" />
 
       <label>Point ID (auto)</label>
-      <input type="text" id="point_id" placeholder="Auto: [Object]_[No]" readonly style="background-color: #f0f0f0; color: #555;" />
+      <input type="text" id="point_id" placeholder="Auto: [Object]_[No]" readonly style="background-color: #f0f0f0; color: #555" />
 
       <label>Reason (optional)</label>
       <textarea id="reason" rows="2" placeholder="Contoh: dekat jalan kolektor dan pasar"></textarea>
@@ -391,7 +452,7 @@
         <button id="exportGeojson" class="btn">Export GeoJSON</button>
         <button id="clearAll" class="btn secondary">Clear All Points</button>
       </div>
-      
+
       <hr />
       <div class="small">Instruksi singkat: 1) Isi Respondent ID. 2) Klik lokasi pada peta. 3) Edit atribut jika perlu. 4) Tekan "Save Point". 5) Setelah selesai, tekan Export CSV.</div>
     </div>
@@ -417,7 +478,6 @@
       <!-- Layers (Custom Shapes) -->
       <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Layers</h4>
       <div style="margin-bottom: 12px">
-        
         <!-- 1. PEMERINTAHAN (UPDATED: Grayscale REVISI) -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">1. Kantor Pemerintah</div>
         <label class="ctrl-label"> <input type="checkbox" id="layer_kantor_pemerintah" /> Kantor Pemerintahan </label>
@@ -457,14 +517,14 @@
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">3. Fasilitas Pendidikan</div>
         <label class="ctrl-label">
           <input type="checkbox" id="layer_sekolah" /> Sekolah (SD/SMP/SMA)
-          <span style="font-size: 10px; background: #eee; padding: 1px 3px; border-radius: 3px; margin-left: 4px;">Cluster</span>
+          <span style="font-size: 10px; background: #eee; padding: 1px 3px; border-radius: 3px; margin-left: 4px">Cluster</span>
         </label>
         <div id="legend_sekolah" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #d95f0e"></span>SMA / SMK</div>
           <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #fe9929"></span>SMP / Sederajat</div>
           <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #fed98e"></span>SD / Sederajat</div>
         </div>
-        
+
         <label class="ctrl-label"> <input type="checkbox" id="layer_kampus" /> Perguruan Tinggi </label>
         <div id="legend_kampus" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item"><span class="legend-symbol sym-circle" style="background: #993404"></span>Universitas</div>
@@ -479,14 +539,14 @@
         <label class="ctrl-label"> <input type="checkbox" id="layer_pasar" /> Pasar Tradisional </label>
         <div id="legend_pasar" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item">
-             <span class="legend-symbol sym-hexagon">
-               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#8e0152" stroke="#cccccc" stroke-width="2"/></svg>
-             </span>Pasar Harian
+            <span class="legend-symbol sym-hexagon">
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#8e0152" stroke="#cccccc" stroke-width="2" /></svg> </span
+            >Pasar Harian
           </div>
           <div class="legend-item">
-             <span class="legend-symbol sym-hexagon">
-               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#7fbc41" stroke="#cccccc" stroke-width="2"/></svg>
-             </span>Pasar Non Harian
+            <span class="legend-symbol sym-hexagon">
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#7fbc41" stroke="#cccccc" stroke-width="2" /></svg> </span
+            >Pasar Non Harian
           </div>
         </div>
 
@@ -511,25 +571,33 @@
         <div id="legend_dtw" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item">
             <span class="legend-symbol sym-star">
-              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#33a02c" stroke="#cccccc" stroke-width="2"/></svg>
-            </span>Wisata Alam
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#33a02c" stroke="#cccccc" stroke-width="2" /></svg> </span
+            >Wisata Alam
           </div>
           <div class="legend-item">
             <span class="legend-symbol sym-star">
-              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#1f78b4" stroke="#cccccc" stroke-width="2"/></svg>
-            </span>Wisata Bahari
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#1f78b4" stroke="#cccccc" stroke-width="2" /></svg> </span
+            >Wisata Bahari
           </div>
           <div class="legend-item">
             <span class="legend-symbol sym-star">
-               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#ff7f00" stroke="#cccccc" stroke-width="2"/></svg>
-            </span>Wisata Budaya
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#ff7f00" stroke="#cccccc" stroke-width="2" /></svg> </span
+            >Wisata Budaya
           </div>
           <div class="legend-item">
             <span class="legend-symbol sym-star">
-               <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#d7191c" stroke="#cccccc" stroke-width="2"/></svg>
-            </span>Desa Wisata
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#d7191c" stroke="#cccccc" stroke-width="2" /></svg> </span
+            >Desa Wisata
           </div>
         </div>
+        
+        <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
+        
+        <!-- 6. RAWAN BENCANA (BNPB) -->
+        <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">6. Kerawanan Bencana</div>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_tsunami" /> Bahaya Tsunami (Inarisk) </label>
+        <div style="font-size:10px; color:#777; margin-left:24px;">Sumber: BNPB ImageServer</div>
+
       </div>
 
       <hr />
@@ -542,7 +610,7 @@
           <button id="zoomOutBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom Out</button>
         </div>
       </div>
-      
+
       <!-- Admin Search Container (RESTORED from Uploaded File) -->
       <div id="admin_search_container" style="margin-top: 12px; border-top: 1px solid #ddd; padding-top: 12px"></div>
     </div>
@@ -583,7 +651,7 @@
           sidebarRight.classList.remove("mobile-visible");
           sidebarLeft.classList.remove("sidebar-minimized");
           sidebarRight.classList.remove("sidebar-minimized");
-          
+
           if (target === "form") {
             tabForm.classList.add("active");
             sidebarLeft.classList.add("mobile-visible");
@@ -592,18 +660,23 @@
             sidebarRight.classList.add("mobile-visible");
           }
         }
-        tabForm.addEventListener("click", function () { switchTab("form"); });
-        tabLayers.addEventListener("click", function () { switchTab("layers"); });
+        tabForm.addEventListener("click", function () {
+          switchTab("form");
+        });
+        tabLayers.addEventListener("click", function () {
+          switchTab("layers");
+        });
       })();
 
       // --- Map Init ---
       var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" });
       var Esri_WorldImagery = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { attribution: "Esri" });
       var OPNVKarte = L.tileLayer("https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "OPNVKarte" });
-      
-      var OpenTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+
+      var OpenTopoMap = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
         maxZoom: 17,
-        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        attribution:
+          'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
       });
 
       var map = L.map("map", { center: [-7.8, 110.37], zoom: 12, layers: [osm], preferCanvas: true });
@@ -613,7 +686,7 @@
       function checkZoomForLabels() {
         var z = map.getZoom();
         var container = map.getContainer();
-        
+
         // 1. Show/Hide threshold
         if (z >= 15) container.classList.add("show-labels");
         else container.classList.remove("show-labels");
@@ -648,7 +721,7 @@
           if (map.hasLayer(Esri_WorldImagery)) map.removeLayer(Esri_WorldImagery);
           if (map.hasLayer(OPNVKarte)) map.removeLayer(OPNVKarte);
           if (map.hasLayer(OpenTopoMap)) map.removeLayer(OpenTopoMap);
-          
+
           if (val === "osm") map.addLayer(osm);
           else if (val === "esri") map.addLayer(Esri_WorldImagery);
           else if (val === "opnv") map.addLayer(OPNVKarte);
@@ -661,10 +734,16 @@
         var paths = [url, "data/" + url];
         return new Promise(function (resolve, reject) {
           function tryFetch(idx) {
-            if (idx >= paths.length) { reject("File not found"); return; }
+            if (idx >= paths.length) {
+              reject("File not found");
+              return;
+            }
             fetch(paths[idx])
-              .then(r => { if (!r.ok) throw new Error("404"); return r.json(); })
-              .then(data => resolve(data))
+              .then((r) => {
+                if (!r.ok) throw new Error("404");
+                return r.json();
+              })
+              .then((data) => resolve(data))
               .catch(() => tryFetch(idx + 1));
           }
           tryFetch(0);
@@ -686,30 +765,32 @@
       function getGovColor(kategori) {
         if (!kategori) return "#737373";
         var k = String(kategori).toLowerCase();
-        if (k.includes("gubernur") || k.includes("diy")) return "#000000"; 
-        if (k.includes("bupati") || k.includes("walikota")) return "#252525"; 
-        if (k.includes("camat") || k.includes("kemantren") || k.includes("kecamatan")) return "#525252"; 
-        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan") || k.includes("lurah")) return "#737373"; 
-        return "#737373"; 
+        if (k.includes("gubernur") || k.includes("diy")) return "#000000";
+        if (k.includes("bupati") || k.includes("walikota")) return "#252525";
+        if (k.includes("camat") || k.includes("kemantren") || k.includes("kecamatan")) return "#525252";
+        if (k.includes("kelurahan") || k.includes("desa") || k.includes("kalurahan") || k.includes("lurah")) return "#737373";
+        return "#737373";
       }
 
       // 2. KESEHATAN
       function getRSColor(ket) {
         if (!ket) return "#2c7fb8";
         var k = String(ket).toLowerCase();
-        if (k.includes("rsu")) return "#253494"; 
-        return "#2c7fb8"; 
+        if (k.includes("rsu")) return "#253494";
+        return "#2c7fb8";
       }
-      function getPuskesmasColor(ket) { return "#1a9850"; } 
-      
+      function getPuskesmasColor(ket) {
+        return "#1a9850";
+      }
+
       // REVISI KLINIK
-      function getKlinikColor(ket) { 
+      function getKlinikColor(ket) {
         if (!ket) return "#238b45"; // Default Lainnya
         var k = String(ket).toLowerCase();
         if (k.includes("umum")) return "#00441b";
         if (k.includes("gigi")) return "#006d2c";
         return "#238b45"; // Lainnya
-      }    
+      }
 
       // 3. PENDIDIKAN
       function getSekolahColor(ket) {
@@ -723,16 +804,16 @@
       function getKampusColor(ket) {
         if (!ket) return "#d95f0e";
         var k = String(ket).toLowerCase();
-        if (k.includes("universitas")) return "#993404"; 
-        return "#d95f0e"; 
+        if (k.includes("universitas")) return "#993404";
+        return "#d95f0e";
       }
 
       // 4. EKONOMI
       function getPasarColor(ket) {
         if (!ket) return "#c51b7d";
         var k = String(ket).toLowerCase();
-        if (k.includes("harian") && !k.includes("non")) return "#8e0152"; 
-        return "#7fbc41"; 
+        if (k.includes("harian") && !k.includes("non")) return "#8e0152";
+        return "#7fbc41";
       }
 
       function getIbmColor(ket) {
@@ -750,55 +831,51 @@
 
       // 5. PARIWISATA
       function getDtwColor(ket) {
-        if (!ket) return "#ff7f00"; 
+        if (!ket) return "#ff7f00";
         var k = String(ket).toLowerCase();
-        if (k.includes("alam")) return "#33a02c"; 
-        if (k.includes("bahari") || k.includes("pantai")) return "#1f78b4"; 
-        if (k.includes("budaya")) return "#ff7f00"; 
-        if (k.includes("desa")) return "#d7191c"; 
-        return "#ff7f00"; 
+        if (k.includes("alam")) return "#33a02c";
+        if (k.includes("bahari") || k.includes("pantai")) return "#1f78b4";
+        if (k.includes("budaya")) return "#ff7f00";
+        if (k.includes("desa")) return "#d7191c";
+        return "#ff7f00";
       }
 
       // --- CUSTOM MARKER CREATION (Preserved from Custom Symbols) ---
       function createCustomMarker(latlng, type, color, properties) {
-        var size = 14; 
+        var size = 14;
         var strokeColor = "#cccccc";
-        var strokeWidth = 2; 
-        
-        if (type === 'circle') {
+        var strokeWidth = 2;
+
+        if (type === "circle") {
           return L.circleMarker(latlng, {
             radius: 6,
-            color: strokeColor, 
+            color: strokeColor,
             weight: strokeWidth,
             opacity: 1,
             fillOpacity: 1,
-            fillColor: color
+            fillColor: color,
           });
         }
 
         var html = "";
-        
-        if (type === 'square') {
+
+        if (type === "square") {
           html = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block;">
                     <rect x="2" y="2" width="20" height="20" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
-        } 
-        else if (type === 'diamond') {
-          html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
+        } else if (type === "diamond") {
+          html = `<svg width="${size + 2}" height="${size + 2}" viewBox="0 0 24 24" style="display:block;">
                     <polygon points="12,2 22,12 12,22 2,12" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
-        }
-        else if (type === 'star') {
-          html = `<svg width="${size+4}" height="${size+4}" viewBox="0 0 24 24" style="display:block;">
+        } else if (type === "star") {
+          html = `<svg width="${size + 4}" height="${size + 4}" viewBox="0 0 24 24" style="display:block;">
                     <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
-        }
-        else if (type === 'hexagon') {
-          html = `<svg width="${size+2}" height="${size+2}" viewBox="0 0 24 24" style="display:block;">
+        } else if (type === "hexagon") {
+          html = `<svg width="${size + 2}" height="${size + 2}" viewBox="0 0 24 24" style="display:block;">
                     <polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                   </svg>`;
-        }
-        else if (type === 'h') {
+        } else if (type === "h") {
           html = `<div style="
             width:${size}px; height:${size}px; 
             color:${color}; 
@@ -813,17 +890,17 @@
         }
 
         var icon = L.divIcon({
-          className: 'custom-div-icon',
+          className: "custom-div-icon",
           html: html,
           iconSize: [size, size],
-          iconAnchor: [size/2, size/2]
+          iconAnchor: [size / 2, size / 2],
         });
 
         return L.marker(latlng, { icon: icon });
       }
 
       // --- LAYER LOADERS (Apply Text Wrapping Here) ---
-      
+
       var layerStorage = {};
       var originalLayerData = {}; // Store raw GeoJSON for resetting
       var activeLayerConfigs = {}; // Store config (shapeType, colorFunc) to re-render
@@ -831,321 +908,347 @@
 
       // FIX: Helper to handle coordinate projection for filtering
       function getNormalizedCoord(coords) {
-         // Check if Mercator (large values)
-         // Usually Mercator bounds are huge, so checking > 180 is safe for Lon/Lat
-         if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
-             var latlon = mercatorToLatLon(coords[0], coords[1]);
-             // mercatorToLatLon returns [lat, lon], Turf expects [lon, lat]
-             return [latlon[1], latlon[0]]; 
-         }
-         return [coords[0], coords[1]]; 
+        // Check if Mercator (large values)
+        // Usually Mercator bounds are huge, so checking > 180 is safe for Lon/Lat
+        if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
+          var latlon = mercatorToLatLon(coords[0], coords[1]);
+          // mercatorToLatLon returns [lat, lon], Turf expects [lon, lat]
+          return [latlon[1], latlon[0]];
+        }
+        return [coords[0], coords[1]];
       }
 
       function filterData(data, poly) {
-         // Filter GeoJSON features based on polygon inclusion
-         if (!data || !data.features) return data;
-         
-         // Safe check for Turf
-         if (typeof turf === 'undefined') {
-             console.warn("Turf.js not loaded");
-             return data;
-         }
+        // Filter GeoJSON features based on polygon inclusion
+        if (!data || !data.features) return data;
 
-         var filteredFeatures = data.features.filter(function(f) {
-             if (!f.geometry || !f.geometry.coordinates) return false;
+        // Safe check for Turf
+        if (typeof turf === "undefined") {
+          console.warn("Turf.js not loaded");
+          return data;
+        }
 
-             // Only handle Point for now (as facility layers are Points)
-             if (f.geometry.type === 'Point') {
-                 // NORMALIZE COORDINATES TO WGS84 BEFORE CHECK
-                 var norm = getNormalizedCoord(f.geometry.coordinates);
-                 var tempFeat = turf.point(norm);
-                 try {
-                    return turf.booleanPointInPolygon(tempFeat, poly);
-                 } catch(e) {
-                    return false;
-                 }
-             }
-             return false;
-         });
-         return { type: "FeatureCollection", features: filteredFeatures };
+        var filteredFeatures = data.features.filter(function (f) {
+          if (!f.geometry || !f.geometry.coordinates) return false;
+
+          // Only handle Point for now (as facility layers are Points)
+          if (f.geometry.type === "Point") {
+            // NORMALIZE COORDINATES TO WGS84 BEFORE CHECK
+            var norm = getNormalizedCoord(f.geometry.coordinates);
+            var tempFeat = turf.point(norm);
+            try {
+              return turf.booleanPointInPolygon(tempFeat, poly);
+            } catch (e) {
+              return false;
+            }
+          }
+          return false;
+        });
+        return { type: "FeatureCollection", features: filteredFeatures };
       }
 
       function renderLayer(key, data) {
-         var config = activeLayerConfigs[key];
-         if (!config) return;
+        var config = activeLayerConfigs[key];
+        if (!config) return;
 
-         // Remove existing if any (refresh)
-         if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
-             map.removeLayer(layerStorage[key]);
-         }
+        // Remove existing if any (refresh)
+        if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
+          map.removeLayer(layerStorage[key]);
+        }
 
-         var lyr = L.geoJSON(data, {
-            coordsToLatLng: function (coords) {
-              if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
-                  var latlon = mercatorToLatLon(coords[0], coords[1]);
-                  return new L.LatLng(latlon[0], latlon[1]);
-              }
-              return new L.LatLng(coords[1], coords[0]);
-            },
-            pointToLayer: function (feature, latlng) {
-              var p = feature.properties;
-              var val = p.kategori || p.keterangan || "";
-              var color = config.colorFunc(val);
-              return createCustomMarker(latlng, config.shapeType, color, p);
-            },
-            onEachFeature: function (feature, layer) {
-              var p = feature.properties;
-              var nm = p.namobj || key;
-              layer.bindPopup("<b>" + nm + "</b><br/>" + (p.keterangan || p.kategori || "-"));
-              if (p.namobj) {
-                var formattedLabel = formatLabelText(p.namobj);
-                layer.bindTooltip(formattedLabel, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
-              }
+        var lyr = L.geoJSON(data, {
+          coordsToLatLng: function (coords) {
+            if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
+              var latlon = mercatorToLatLon(coords[0], coords[1]);
+              return new L.LatLng(latlon[0], latlon[1]);
             }
-          }).addTo(map);
-          layerStorage[key] = lyr;
+            return new L.LatLng(coords[1], coords[0]);
+          },
+          pointToLayer: function (feature, latlng) {
+            var p = feature.properties;
+            var val = p.kategori || p.keterangan || "";
+            var color = config.colorFunc(val);
+            return createCustomMarker(latlng, config.shapeType, color, p);
+          },
+          onEachFeature: function (feature, layer) {
+            var p = feature.properties;
+            var nm = p.namobj || key;
+            layer.bindPopup("<b>" + nm + "</b><br/>" + (p.keterangan || p.kategori || "-"));
+            if (p.namobj) {
+              var formattedLabel = formatLabelText(p.namobj);
+              layer.bindTooltip(formattedLabel, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
+            }
+          },
+        }).addTo(map);
+        layerStorage[key] = lyr;
       }
 
       function loadLayer(key, url, shapeType, colorFunc) {
         activeLayerConfigs[key] = { shapeType: shapeType, colorFunc: colorFunc };
-        
+
         // If already loaded/filtered, just add (unless we need to refetch?)
         // Better to check if we have data. If we have original data, we just render (filtered or not)
         if (originalLayerData[key]) {
-            var dataToRender = originalLayerData[key];
-            if (currentFilterPoly) {
-                dataToRender = filterData(dataToRender, currentFilterPoly);
-            }
-            renderLayer(key, dataToRender);
-            return;
-        }
-
-        fetchGeoJSON(url).then(function (data) {
-          originalLayerData[key] = data; // Save raw
-          var dataToRender = data;
+          var dataToRender = originalLayerData[key];
           if (currentFilterPoly) {
-               dataToRender = filterData(data, currentFilterPoly);
+            dataToRender = filterData(dataToRender, currentFilterPoly);
           }
           renderLayer(key, dataToRender);
-        }).catch(err => {
-          console.error("Layer error " + key, err);
-          alert("Gagal memuat layer: " + key + "\nFile mungkin tidak ditemukan: " + url);
-        });
+          return;
+        }
+
+        fetchGeoJSON(url)
+          .then(function (data) {
+            originalLayerData[key] = data; // Save raw
+            var dataToRender = data;
+            if (currentFilterPoly) {
+              dataToRender = filterData(data, currentFilterPoly);
+            }
+            renderLayer(key, dataToRender);
+          })
+          .catch((err) => {
+            console.error("Layer error " + key, err);
+            alert("Gagal memuat layer: " + key + "\nFile mungkin tidak ditemukan: " + url);
+          });
       }
 
       // --- Custom Cluster for Education (Circle) ---
       function renderSekolah(data) {
-         if (layerStorage['sekolah'] && map.hasLayer(layerStorage['sekolah'])) {
-             map.removeLayer(layerStorage['sekolah']);
-         }
-         
-         var cluster = L.markerClusterGroup({
+        if (layerStorage["sekolah"] && map.hasLayer(layerStorage["sekolah"])) {
+          map.removeLayer(layerStorage["sekolah"]);
+        }
+
+        var cluster = L.markerClusterGroup({
           spiderfyShapePositions: function (count, centerPt) {
-            var distanceFromCenter = 35, markerDistance = 45, lineLength = markerDistance * (count - 1),
-                lineStart = centerPt.y - lineLength / 2, res = [];
+            var distanceFromCenter = 35,
+              markerDistance = 45,
+              lineLength = markerDistance * (count - 1),
+              lineStart = centerPt.y - lineLength / 2,
+              res = [];
             for (var i = count - 1; i >= 0; i--) {
               res[i] = new L.Point(centerPt.x + distanceFromCenter, lineStart + markerDistance * i);
             }
             return res;
-          }
+          },
         });
 
-         var gj = L.geoJSON(data, {
-             coordsToLatLng: function (coords) {
-                if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
-                  var latlon = mercatorToLatLon(coords[0], coords[1]);
-                  return new L.LatLng(latlon[0], latlon[1]);
-                }
-                return new L.LatLng(coords[1], coords[0]);
-            },
-            pointToLayer: function (feature, latlng) {
-              var col = getSekolahColor(feature.properties.keterangan);
-              // Use circle for Sekolah
-              return createCustomMarker(latlng, 'circle', col);
-            },
-            onEachFeature: function (feature, layer) {
-              var p = feature.properties;
-              layer.bindPopup("<b>" + (p.namobj||"Sekolah") + "</b><br/>" + (p.keterangan||"-"));
-              if(p.namobj) {
-                 var formattedLabel = formatLabelText(p.namobj);
-                 layer.bindTooltip(formattedLabel, {permanent:true, direction:"top", className:"feature-label", offset:[0,-8]});
-              }
+        var gj = L.geoJSON(data, {
+          coordsToLatLng: function (coords) {
+            if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
+              var latlon = mercatorToLatLon(coords[0], coords[1]);
+              return new L.LatLng(latlon[0], latlon[1]);
             }
-         });
-         cluster.addLayer(gj);
-         map.addLayer(cluster);
-         layerStorage['sekolah'] = cluster;
+            return new L.LatLng(coords[1], coords[0]);
+          },
+          pointToLayer: function (feature, latlng) {
+            var col = getSekolahColor(feature.properties.keterangan);
+            // Use circle for Sekolah
+            return createCustomMarker(latlng, "circle", col);
+          },
+          onEachFeature: function (feature, layer) {
+            var p = feature.properties;
+            layer.bindPopup("<b>" + (p.namobj || "Sekolah") + "</b><br/>" + (p.keterangan || "-"));
+            if (p.namobj) {
+              var formattedLabel = formatLabelText(p.namobj);
+              layer.bindTooltip(formattedLabel, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
+            }
+          },
+        });
+        cluster.addLayer(gj);
+        map.addLayer(cluster);
+        layerStorage["sekolah"] = cluster;
       }
 
       function loadSekolahCluster() {
-        if (originalLayerData['sekolah']) {
-             var data = originalLayerData['sekolah'];
-             if(currentFilterPoly) data = filterData(data, currentFilterPoly);
-             renderSekolah(data);
-             return;
+        if (originalLayerData["sekolah"]) {
+          var data = originalLayerData["sekolah"];
+          if (currentFilterPoly) data = filterData(data, currentFilterPoly);
+          renderSekolah(data);
+          return;
         }
 
-        fetchGeoJSON("ONLINE_DIKPORA_SEKOLAH_DASAR_MENENGAH_PT.geojson").then(data => {
-          originalLayerData['sekolah'] = data;
-          var dataToRender = data;
-          if(currentFilterPoly) dataToRender = filterData(data, currentFilterPoly);
-          renderSekolah(dataToRender);
-        }).catch(err => {
-             console.error("Layer error sekolah", err);
-             alert("Gagal memuat layer Sekolah");
-        });
+        fetchGeoJSON("ONLINE_DIKPORA_SEKOLAH_DASAR_MENENGAH_PT.geojson")
+          .then((data) => {
+            originalLayerData["sekolah"] = data;
+            var dataToRender = data;
+            if (currentFilterPoly) dataToRender = filterData(data, currentFilterPoly);
+            renderSekolah(dataToRender);
+          })
+          .catch((err) => {
+            console.error("Layer error sekolah", err);
+            alert("Gagal memuat layer Sekolah");
+          });
       }
 
       // --- FILTERING LOGIC ---
       function applyAdminFilter(feature) {
-          // 1. Create Buffer 1km
-          // Make sure feature is valid WGS84 (Admin layers seem to be WGS84 based on loader)
-          var buffered = turf.buffer(feature, 1, {units: 'kilometers'});
-          currentFilterPoly = buffered;
+        // 1. Create Buffer 1km
+        // Make sure feature is valid WGS84 (Admin layers seem to be WGS84 based on loader)
+        var buffered = turf.buffer(feature, 1, { units: "kilometers" });
+        currentFilterPoly = buffered;
 
-          // 2. Refresh all active layers
-          Object.keys(activeLayerConfigs).forEach(function(key) {
-             // Only if layer is currently on map (checked)
-             if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
-                 var raw = originalLayerData[key];
-                 if(raw) {
-                     var filtered = filterData(raw, currentFilterPoly);
-                     renderLayer(key, filtered);
-                 }
-             }
-          });
-
-          // Refresh Sekolah if active
-          if (layerStorage['sekolah'] && map.hasLayer(layerStorage['sekolah'])) {
-              var raw = originalLayerData['sekolah'];
-              if(raw) {
-                  var filtered = filterData(raw, currentFilterPoly);
-                  renderSekolah(filtered);
-              }
+        // 2. Refresh all active layers
+        Object.keys(activeLayerConfigs).forEach(function (key) {
+          // Only if layer is currently on map (checked)
+          if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
+            var raw = originalLayerData[key];
+            if (raw) {
+              var filtered = filterData(raw, currentFilterPoly);
+              renderLayer(key, filtered);
+            }
           }
+        });
+
+        // Refresh Sekolah if active
+        if (layerStorage["sekolah"] && map.hasLayer(layerStorage["sekolah"])) {
+          var raw = originalLayerData["sekolah"];
+          if (raw) {
+            var filtered = filterData(raw, currentFilterPoly);
+            renderSekolah(filtered);
+          }
+        }
       }
 
       function clearAdminFilter() {
-          currentFilterPoly = null;
-          
-          // Restore all
-          Object.keys(activeLayerConfigs).forEach(function(key) {
-             if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
-                 var raw = originalLayerData[key];
-                 if(raw) renderLayer(key, raw);
-             }
-          });
-          
-          if (layerStorage['sekolah'] && map.hasLayer(layerStorage['sekolah'])) {
-              var raw = originalLayerData['sekolah'];
-              if(raw) renderSekolah(raw);
+        currentFilterPoly = null;
+
+        // Restore all
+        Object.keys(activeLayerConfigs).forEach(function (key) {
+          if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
+            var raw = originalLayerData[key];
+            if (raw) renderLayer(key, raw);
           }
+        });
+
+        if (layerStorage["sekolah"] && map.hasLayer(layerStorage["sekolah"])) {
+          var raw = originalLayerData["sekolah"];
+          if (raw) renderSekolah(raw);
+        }
       }
 
-
       // --- Event Listeners ---
-      
+
       // 1. Pemerintah
-      document.getElementById("layer_kantor_pemerintah").addEventListener("change", function(e) {
+      document.getElementById("layer_kantor_pemerintah").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_kantor");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("kantor", "TOPONIMI_KANTORPEMERINTAH_PT.geojson", "square", getGovColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["kantor"]) map.removeLayer(layerStorage["kantor"]);
+          if (layerStorage["kantor"]) map.removeLayer(layerStorage["kantor"]);
           lg.style.display = "none";
         }
       });
 
       // 2. Kesehatan
-      document.getElementById("layer_rs").addEventListener("change", function(e) {
+      document.getElementById("layer_rs").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_rs");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("rs", "ONLINE_DINKES_RUMAHSAKIT_PT.geojson", "h", getRSColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["rs"]) map.removeLayer(layerStorage["rs"]);
+          if (layerStorage["rs"]) map.removeLayer(layerStorage["rs"]);
           lg.style.display = "none";
         }
       });
-      document.getElementById("layer_puskesmas").addEventListener("change", function(e) {
+      document.getElementById("layer_puskesmas").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_puskesmas");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("puskesmas", "ONLINE_DINKES_PUSKESMAS_PT.geojson", "h", getPuskesmasColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["puskesmas"]) map.removeLayer(layerStorage["puskesmas"]);
+          if (layerStorage["puskesmas"]) map.removeLayer(layerStorage["puskesmas"]);
           lg.style.display = "none";
         }
       });
-      document.getElementById("layer_klinik").addEventListener("change", function(e) {
+      document.getElementById("layer_klinik").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_klinik");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("klinik", "ONLINE_DINKES_KLINIK_PT.geojson", "h", getKlinikColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["klinik"]) map.removeLayer(layerStorage["klinik"]);
+          if (layerStorage["klinik"]) map.removeLayer(layerStorage["klinik"]);
           lg.style.display = "none";
         }
       });
 
       // 3. Pendidikan
-      document.getElementById("layer_sekolah").addEventListener("change", function(e) {
+      document.getElementById("layer_sekolah").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_sekolah");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadSekolahCluster();
           lg.style.display = "block";
         } else {
-          if(layerStorage["sekolah"]) map.removeLayer(layerStorage["sekolah"]);
+          if (layerStorage["sekolah"]) map.removeLayer(layerStorage["sekolah"]);
           lg.style.display = "none";
         }
       });
 
-      document.getElementById("layer_kampus").addEventListener("change", function(e) {
+      document.getElementById("layer_kampus").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_kampus");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("kampus", "ONLINE_AGOL_PENDIDIKANTINGGI_PT.geojson", "circle", getKampusColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["kampus"]) map.removeLayer(layerStorage["kampus"]);
+          if (layerStorage["kampus"]) map.removeLayer(layerStorage["kampus"]);
           lg.style.display = "none";
         }
       });
 
       // 4. Ekonomi
-      document.getElementById("layer_pasar").addEventListener("change", function(e) {
+      document.getElementById("layer_pasar").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_pasar");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("pasar", "ONLINE_DISPERINDAG_PASAR_PT.geojson", "hexagon", getPasarColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["pasar"]) map.removeLayer(layerStorage["pasar"]);
+          if (layerStorage["pasar"]) map.removeLayer(layerStorage["pasar"]);
           lg.style.display = "none";
         }
       });
-      
-      document.getElementById("layer_ibm").addEventListener("change", function(e) {
+
+      document.getElementById("layer_ibm").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_ibm");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("ibm", "ONLINE_DISPERINDAG_IBM_2024_PT.geojson", "diamond", getIbmColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["ibm"]) map.removeLayer(layerStorage["ibm"]);
+          if (layerStorage["ibm"]) map.removeLayer(layerStorage["ibm"]);
           lg.style.display = "none";
         }
       });
 
       // 5. Pariwisata
-      document.getElementById("layer_dtw").addEventListener("change", function(e) {
+      document.getElementById("layer_dtw").addEventListener("change", function (e) {
         var lg = document.getElementById("legend_dtw");
-        if(e.target.checked) {
+        if (e.target.checked) {
           loadLayer("dtw", "ONLINE_DISPAR_KUNJUNGAN_DTW_2024_PT.geojson", "star", getDtwColor);
           lg.style.display = "block";
         } else {
-          if(layerStorage["dtw"]) map.removeLayer(layerStorage["dtw"]);
+          if (layerStorage["dtw"]) map.removeLayer(layerStorage["dtw"]);
           lg.style.display = "none";
         }
       });
+
+      // --- 6. BENCANA (BNPB - ESRI) ---
+      var bnpbTsunamiLayer = null;
+      document.getElementById("layer_bencana_tsunami").addEventListener("change", function(e) {
+        if (e.target.checked) {
+          // Initialize if null
+          if (!bnpbTsunamiLayer) {
+            bnpbTsunamiLayer = L.esri.imageMapLayer({
+              url: 'https://gis.bnpb.go.id/server/rest/services/inarisk/layer_bahaya_tsunami/ImageServer',
+              opacity: 0.7
+            });
+          }
+          bnpbTsunamiLayer.addTo(map);
+        } else {
+          if (bnpbTsunamiLayer && map.hasLayer(bnpbTsunamiLayer)) {
+            map.removeLayer(bnpbTsunamiLayer);
+          }
+        }
+      });
+
 
       // --- Point Collection Logic (UPDATED FROM UPLOADED FILE) ---
       var allPoints = [];
@@ -1189,37 +1292,37 @@
 
       // --- REVISI 1: AUTO GENERATE POINT ID ---
       function updatePointIdPreview() {
-         var mo = mappingObjectEl ? mappingObjectEl.value.trim() : "";
-         if (!mo) {
-            pointIdEl.value = "";
-            return;
-         }
-         
-         // Hitung berapa point yg SUDAH ada dengan prefix mapping object yg sama
-         // Logic: cari point yang mapping_object-nya sama persis (case insensitive?)
-         // User bilang "nomor terisi otomatis", asumsi incremental
-         var count = 0;
-         allPoints.forEach(function(p){
-            if (p.mapping_object && p.mapping_object.toLowerCase() === mo.toLowerCase()) {
-               count++;
-            }
-         });
-         var nextIdx = count + 1;
-         
-         // Format: [MappingObject]_[No]
-         pointIdEl.value = mo + "_" + nextIdx;
+        var mo = mappingObjectEl ? mappingObjectEl.value.trim() : "";
+        if (!mo) {
+          pointIdEl.value = "";
+          return;
+        }
+
+        // Hitung berapa point yg SUDAH ada dengan prefix mapping object yg sama
+        // Logic: cari point yang mapping_object-nya sama persis (case insensitive?)
+        // User bilang "nomor terisi otomatis", asumsi incremental
+        var count = 0;
+        allPoints.forEach(function (p) {
+          if (p.mapping_object && p.mapping_object.toLowerCase() === mo.toLowerCase()) {
+            count++;
+          }
+        });
+        var nextIdx = count + 1;
+
+        // Format: [MappingObject]_[No]
+        pointIdEl.value = mo + "_" + nextIdx;
       }
 
       // Listener saat Mapping Object diketik
       if (mappingObjectEl) {
-         mappingObjectEl.addEventListener("input", updatePointIdPreview);
+        mappingObjectEl.addEventListener("input", updatePointIdPreview);
       }
 
       // Map Click Handler (Enhanced)
       map.on("click", function (e) {
         if (tempMarker) map.removeLayer(tempMarker);
         tempMarker = L.marker(e.latlng, { draggable: true }).addTo(map);
-        
+
         // Auto update input if marker is dragged
         tempMarker.on("dragend", function (ev) {
           var ll = ev.target.getLatLng();
@@ -1239,25 +1342,25 @@
       });
 
       // Save Point Handler (Enhanced with Validation)
-      document.getElementById("savePointBtn").addEventListener("click", function() {
+      document.getElementById("savePointBtn").addEventListener("click", function () {
         var rid = currentRespondentId();
         var mo = mappingObjectEl ? mappingObjectEl.value.trim() : "";
 
         // VALIDATION: Mandatory Fields
         if (!rid) {
-           alert("Respondent ID wajib diisi!");
-           return; 
+          alert("Respondent ID wajib diisi!");
+          return;
         }
         if (!mo) {
-           alert("Mapping Object wajib diisi!");
-           return;
+          alert("Mapping Object wajib diisi!");
+          return;
         }
 
         if (!pointIdEl || !pointIdEl.dataset.lat || !pointIdEl.dataset.lon) {
-           alert("Silakan klik peta untuk memilih lokasi terlebih dahulu.");
-           return; 
+          alert("Silakan klik peta untuk memilih lokasi terlebih dahulu.");
+          return;
         }
-        
+
         var lat = parseFloat(pointIdEl.dataset.lat);
         var lon = parseFloat(pointIdEl.dataset.lon);
 
@@ -1267,42 +1370,45 @@
         // Namun, jika user klik save berkali-kali tanpa ubah input, kita harus pastikan unik?
         // Mari kita hitung ulang index saat save untuk jaminan unik.
         var count = 0;
-        allPoints.forEach(function(p){
-            if (p.mapping_object && p.mapping_object.toLowerCase() === mo.toLowerCase()) {
-               count++;
-            }
+        allPoints.forEach(function (p) {
+          if (p.mapping_object && p.mapping_object.toLowerCase() === mo.toLowerCase()) {
+            count++;
+          }
         });
         var pid = mo + "_" + (count + 1);
-        
+
         // Update input field visual
         pointIdEl.value = pid;
 
         var acc = accuracyEl && accuracyEl.value ? accuracyEl.value.trim() : "";
 
         var rec = {
-           respondent_id: rid || "",
-           stakeholder_group: stakeholderEl ? stakeholderEl.value : "",
-           mapping_object: mo,
-           point_id: pid,
-           latitude: lat,
-           longitude: lon,
-           timestamp: new Date().toISOString(),
-           reason: reasonEl ? (reasonEl.value ? reasonEl.value.trim() : "") : "",
-           map_source: mapSourceEl ? mapSourceEl.value : "",
-           accuracy_m: acc
+          respondent_id: rid || "",
+          stakeholder_group: stakeholderEl ? stakeholderEl.value : "",
+          mapping_object: mo,
+          point_id: pid,
+          latitude: lat,
+          longitude: lon,
+          timestamp: new Date().toISOString(),
+          reason: reasonEl ? (reasonEl.value ? reasonEl.value.trim() : "") : "",
+          map_source: mapSourceEl ? mapSourceEl.value : "",
+          accuracy_m: acc,
         };
-        
-        var marker = L.circleMarker([lat,lon], {radius:6, color:"#d9534f"}).addTo(map);
+
+        var marker = L.circleMarker([lat, lon], { radius: 6, color: "#d9534f" }).addTo(map);
         var popupParts = ["<b>" + pid + "</b>"];
         if (rec.mapping_object) popupParts.push("<i>" + rec.mapping_object + "</i>");
         if (rec.reason) popupParts.push(rec.reason);
         marker.bindPopup(popupParts.join("<br/>"));
-        
+
         rec.marker = marker;
         allPoints.push(rec);
-        
-        if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-        
+
+        if (tempMarker) {
+          map.removeLayer(tempMarker);
+          tempMarker = null;
+        }
+
         // Reset specific fields (keep Respondent ID for flow)
         if (pointIdEl) {
           pointIdEl.value = "";
@@ -1311,49 +1417,54 @@
         }
         if (reasonEl) reasonEl.value = "";
         if (accuracyEl) accuracyEl.value = "";
-        
+
         // Update next ID preview immediately
         updatePointIdPreview();
         updatePointsUI();
       });
-      
+
       // Clear Form Listener (New Feature)
-      document.getElementById("clearFormBtn").addEventListener("click", function() {
-        if(confirm("Apakah Anda yakin ingin membersihkan form? Data yang belum disimpan di form akan hilang.")) {
-            resetFormFields();
-            if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+      document.getElementById("clearFormBtn").addEventListener("click", function () {
+        if (confirm("Apakah Anda yakin ingin membersihkan form? Data yang belum disimpan di form akan hilang.")) {
+          resetFormFields();
+          if (tempMarker) {
+            map.removeLayer(tempMarker);
+            tempMarker = null;
+          }
         }
       });
 
       function updatePointsUI() {
         var rid = currentRespondentId();
-        var pts = rid ? pointsForRespondent(rid) : []; 
-        
+        var pts = rid ? pointsForRespondent(rid) : [];
+
         // Fallback: if no rid entered, show all (or none).
-        if(!rid && allPoints.length > 0) pts = allPoints; 
-        
+        if (!rid && allPoints.length > 0) pts = allPoints;
+
         pointsCountEl.textContent = pts.length + " points";
         pointsTableBody.innerHTML = "";
-        
-        if(pts.length > 0) {
-            pointsTable.style.display = "table";
-            pts.forEach(function (p, i) {
-              var tr = document.createElement("tr");
-              tr.innerHTML = `<td>${i+1}</td><td>${p.point_id}</td><td>${p.mapping_object}</td><td>${p.latitude.toFixed(5)}</td><td>${p.longitude.toFixed(5)}</td><td>${p.reason?p.reason.substring(0,15)+"...":""}</td><td><button onclick="delPoint('${p.point_id}')" class="btn secondary smallBtn">Del</button></td>`;
-              pointsTableBody.appendChild(tr);
-            });
+
+        if (pts.length > 0) {
+          pointsTable.style.display = "table";
+          pts.forEach(function (p, i) {
+            var tr = document.createElement("tr");
+            tr.innerHTML = `<td>${i + 1}</td><td>${p.point_id}</td><td>${p.mapping_object}</td><td>${p.latitude.toFixed(5)}</td><td>${p.longitude.toFixed(5)}</td><td>${
+              p.reason ? p.reason.substring(0, 15) + "..." : ""
+            }</td><td><button onclick="delPoint('${p.point_id}')" class="btn secondary smallBtn">Del</button></td>`;
+            pointsTableBody.appendChild(tr);
+          });
         } else {
-            pointsTable.style.display = "none";
+          pointsTable.style.display = "none";
         }
       }
 
-      window.delPoint = function(pid) {
-        var idx = allPoints.findIndex(p => p.point_id === pid);
-        if(idx >= 0) {
-            if(allPoints[idx].marker) map.removeLayer(allPoints[idx].marker);
-            allPoints.splice(idx,1);
-            updatePointsUI();
-            updatePointIdPreview(); // Update ID next jika ada yg dihapus (optional, tp baik utk konsistensi)
+      window.delPoint = function (pid) {
+        var idx = allPoints.findIndex((p) => p.point_id === pid);
+        if (idx >= 0) {
+          if (allPoints[idx].marker) map.removeLayer(allPoints[idx].marker);
+          allPoints.splice(idx, 1);
+          updatePointsUI();
+          updatePointIdPreview(); // Update ID next jika ada yg dihapus (optional, tp baik utk konsistensi)
         }
       };
 
@@ -1363,7 +1474,7 @@
         var str = String(s).replace(/"/g, '""');
         return '"' + str + '"';
       }
-      
+
       function downloadText(filename, text, mimeType) {
         var blob = new Blob(["\uFEFF" + text], { type: mimeType }); // Add BOM
         var link = document.createElement("a");
@@ -1377,119 +1488,152 @@
 
       // REVISI 2: Format Nama File Export
       function getExportFilename(extension) {
-         var rid = currentRespondentId() || "NoID";
-         
-         // Timestamp data terakhir (atau sekarang jika kosong)
-         var lastTsStr = "";
-         var lastMO = "";
-         
-         if (allPoints.length > 0) {
-            var lastPt = allPoints[allPoints.length - 1];
-            // Format timestamp from ISO to readable compact: YYYYMMDD-HHmm
-            var d = new Date(lastPt.timestamp);
-            var yyyy = d.getFullYear();
-            var mm = String(d.getMonth() + 1).padStart(2, '0');
-            var dd = String(d.getDate()).padStart(2, '0');
-            var hh = String(d.getHours()).padStart(2, '0');
-            var min = String(d.getMinutes()).padStart(2, '0');
-            lastTsStr = yyyy + mm + dd + "-" + hh + min;
-            
-            lastMO = lastPt.mapping_object || "NoObject";
-         } else {
-            var d = new Date();
-            var yyyy = d.getFullYear();
-            var mm = String(d.getMonth() + 1).padStart(2, '0');
-            var dd = String(d.getDate()).padStart(2, '0');
-            var hh = String(d.getHours()).padStart(2, '0');
-            var min = String(d.getMinutes()).padStart(2, '0');
-            lastTsStr = yyyy + mm + dd + "-" + hh + min;
-            lastMO = "NoData";
-         }
-         
-         // Sanitasi nama file (hapus karakter aneh)
-         var safeMO = lastMO.replace(/[^a-zA-Z0-9-_]/g, "");
-         var safeRID = rid.replace(/[^a-zA-Z0-9-_]/g, "");
-         
-         return safeRID + "_" + lastTsStr + "_" + safeMO + extension;
+        var rid = currentRespondentId() || "NoID";
+
+        // Timestamp data terakhir (atau sekarang jika kosong)
+        var lastTsStr = "";
+        var lastMO = "";
+
+        if (allPoints.length > 0) {
+          var lastPt = allPoints[allPoints.length - 1];
+          // Format timestamp from ISO to readable compact: YYYYMMDD-HHmm
+          var d = new Date(lastPt.timestamp);
+          var yyyy = d.getFullYear();
+          var mm = String(d.getMonth() + 1).padStart(2, "0");
+          var dd = String(d.getDate()).padStart(2, "0");
+          var hh = String(d.getHours()).padStart(2, "0");
+          var min = String(d.getMinutes()).padStart(2, "0");
+          lastTsStr = yyyy + mm + dd + "-" + hh + min;
+
+          lastMO = lastPt.mapping_object || "NoObject";
+        } else {
+          var d = new Date();
+          var yyyy = d.getFullYear();
+          var mm = String(d.getMonth() + 1).padStart(2, "0");
+          var dd = String(d.getDate()).padStart(2, "0");
+          var hh = String(d.getHours()).padStart(2, "0");
+          var min = String(d.getMinutes()).padStart(2, "0");
+          lastTsStr = yyyy + mm + dd + "-" + hh + min;
+          lastMO = "NoData";
+        }
+
+        // Sanitasi nama file (hapus karakter aneh)
+        var safeMO = lastMO.replace(/[^a-zA-Z0-9-_]/g, "");
+        var safeRID = rid.replace(/[^a-zA-Z0-9-_]/g, "");
+
+        return safeRID + "_" + lastTsStr + "_" + safeMO + extension;
       }
 
-      document.getElementById("exportCsv").addEventListener("click", function() {
+      document.getElementById("exportCsv").addEventListener("click", function () {
         var rid = currentRespondentId();
         var arr = rid ? pointsForRespondent(rid) : allPoints;
-        if(!arr.length) { alert("Tidak ada data."); return; }
-        
+        if (!arr.length) {
+          alert("Tidak ada data.");
+          return;
+        }
+
         var header = ["respondent_id", "stakeholder_group", "mapping_object", "point_id", "latitude", "longitude", "timestamp", "reason", "map_source", "accuracy_m"];
         var lines = [header.join(",")];
         arr.forEach(function (r) {
           var row = [
-            escapeCsvCell(r.respondent_id), escapeCsvCell(r.stakeholder_group), escapeCsvCell(r.mapping_object),
-            escapeCsvCell(r.point_id), r.latitude, r.longitude,
-            escapeCsvCell(r.timestamp), escapeCsvCell(r.reason), escapeCsvCell(r.map_source), escapeCsvCell(r.accuracy_m)
+            escapeCsvCell(r.respondent_id),
+            escapeCsvCell(r.stakeholder_group),
+            escapeCsvCell(r.mapping_object),
+            escapeCsvCell(r.point_id),
+            r.latitude,
+            r.longitude,
+            escapeCsvCell(r.timestamp),
+            escapeCsvCell(r.reason),
+            escapeCsvCell(r.map_source),
+            escapeCsvCell(r.accuracy_m),
           ];
           lines.push(row.join(","));
         });
-        
+
         var fname = getExportFilename(".csv");
         downloadText(fname, lines.join("\n"), "text/csv;charset=utf-8;");
       });
 
-      document.getElementById("exportGeojson").addEventListener("click", function() {
+      document.getElementById("exportGeojson").addEventListener("click", function () {
         var rid = currentRespondentId();
         var arr = rid ? pointsForRespondent(rid) : allPoints;
-        if(!arr.length) { alert("Tidak ada data."); return; }
-        
+        if (!arr.length) {
+          alert("Tidak ada data.");
+          return;
+        }
+
         var gj = { type: "FeatureCollection", features: [] };
         arr.forEach(function (p) {
-            gj.features.push({
-              type: "Feature",
-              properties: {
-                respondent_id: p.respondent_id, stakeholder_group: p.stakeholder_group,
-                mapping_object: p.mapping_object, point_id: p.point_id,
-                timestamp: p.timestamp, reason: p.reason,
-                map_source: p.map_source, accuracy_m: p.accuracy_m
-              },
-              geometry: { type: "Point", coordinates: [p.longitude, p.latitude] }
-            });
+          gj.features.push({
+            type: "Feature",
+            properties: {
+              respondent_id: p.respondent_id,
+              stakeholder_group: p.stakeholder_group,
+              mapping_object: p.mapping_object,
+              point_id: p.point_id,
+              timestamp: p.timestamp,
+              reason: p.reason,
+              map_source: p.map_source,
+              accuracy_m: p.accuracy_m,
+            },
+            geometry: { type: "Point", coordinates: [p.longitude, p.latitude] },
+          });
         });
-        
+
         var fname = getExportFilename(".geojson");
         downloadText(fname, JSON.stringify(gj), "application/geo+json;charset=utf-8;");
       });
 
-      document.getElementById("clearAll").addEventListener("click", function() {
-        if(confirm("Hapus semua titik?")) {
-            allPoints.forEach(p => map.removeLayer(p.marker));
-            allPoints = [];
-            updatePointsUI();
-            updatePointIdPreview();
+      document.getElementById("clearAll").addEventListener("click", function () {
+        if (confirm("Hapus semua titik?")) {
+          allPoints.forEach((p) => map.removeLayer(p.marker));
+          allPoints = [];
+          updatePointsUI();
+          updatePointIdPreview();
         }
       });
-      
+
       document.getElementById("respondent_id").addEventListener("input", updatePointsUI);
 
       // --- Tools Listeners ---
       document.getElementById("getLocationBtn").addEventListener("click", function () {
-        if (!navigator.geolocation) { alert("Geolocation tidak tersedia."); return; }
-        var btn = this; btn.disabled = true; btn.textContent = "Locating...";
+        if (!navigator.geolocation) {
+          alert("Geolocation tidak tersedia.");
+          return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = "Locating...";
         navigator.geolocation.getCurrentPosition(
           function (pos) {
-            var lat = pos.coords.latitude, lon = pos.coords.longitude;
+            var lat = pos.coords.latitude,
+              lon = pos.coords.longitude;
             map.setView([lat, lon], 16);
             var m = L.circleMarker([lat, lon], { radius: 8, color: "#337ab7" }).addTo(map);
             m.bindPopup("<b>Your location</b>").openPopup();
-            setTimeout(function () { if (map && m) map.removeLayer(m); }, 10000);
-            btn.disabled = false; btn.textContent = "Get my location";
+            setTimeout(function () {
+              if (map && m) map.removeLayer(m);
+            }, 10000);
+            btn.disabled = false;
+            btn.textContent = "Get my location";
           },
           function (err) {
             alert("Gagal: " + err.message);
-            btn.disabled = false; btn.textContent = "Get my location";
-          }, { enableHighAccuracy: true, timeout: 10000 }
+            btn.disabled = false;
+            btn.textContent = "Get my location";
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
         );
       });
-      document.getElementById("zoomInBtn").addEventListener("click", function () { map.zoomIn(); });
-      document.getElementById("zoomOutBtn").addEventListener("click", function () { map.zoomOut(); });
-      document.getElementById("centerBtn").addEventListener("click", function(){ map.setView([-7.8, 110.37], 12); });
-
+      document.getElementById("zoomInBtn").addEventListener("click", function () {
+        map.zoomIn();
+      });
+      document.getElementById("zoomOutBtn").addEventListener("click", function () {
+        map.zoomOut();
+      });
+      document.getElementById("centerBtn").addEventListener("click", function () {
+        map.setView([-7.8, 110.37], 12);
+      });
 
       // --- Administrative Search Logic (ROBUST VERSION FROM UPLOADED FILE) ---
       var adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
@@ -1497,51 +1641,58 @@
 
       function styleFor(level) {
         switch (level) {
-          case "prov": return { color: "#4b2e83", weight: 5, fill: false, opacity: 0.9 };
-          case "kab": return { color: "#2b7fb8", weight: 3.5, fill: false, opacity: 0.9 };
-          case "kec": return { color: "#2c7a3e", weight: 2.5, fill: false, opacity: 0.9 };
-          case "desa": return { color: "#666", weight: 1.5, fill: false, opacity: 0.9 };
-          default: return { color: "#000", weight: 1, fill: false };
+          case "prov":
+            return { color: "#4b2e83", weight: 5, fill: false, opacity: 0.9 };
+          case "kab":
+            return { color: "#2b7fb8", weight: 3.5, fill: false, opacity: 0.9 };
+          case "kec":
+            return { color: "#2c7a3e", weight: 2.5, fill: false, opacity: 0.9 };
+          case "desa":
+            return { color: "#666", weight: 1.5, fill: false, opacity: 0.9 };
+          default:
+            return { color: "#000", weight: 1, fill: false };
         }
       }
 
       async function loadAdminGeojson(key, url, level) {
         // Try multiple paths (Robust)
         var candidates = [url, "data/" + url, url.toLowerCase(), url.replace(/\.geojson$/i, ".json")];
-        
-        if(adminLayers[key]) {
-           try { map.removeLayer(adminLayers[key]); } catch(e){}
-           adminLayers[key] = null;
+
+        if (adminLayers[key]) {
+          try {
+            map.removeLayer(adminLayers[key]);
+          } catch (e) {}
+          adminLayers[key] = null;
         }
 
-        for(var i=0; i<candidates.length; i++){
+        for (var i = 0; i < candidates.length; i++) {
           try {
-             var resp = await fetch(candidates[i]);
-             if(!resp.ok) continue;
-             var gj = await resp.json();
-             
-             // Create layer but DO NOT add to map yet (keep clean)
-             var layer = L.geoJSON(gj, {
-               style: styleFor(level),
-               onEachFeature: function(feature, lyr){
-                 var props = feature.properties || {};
-                 var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "";
-                 lyr.bindTooltip(String(name), {permanent:true, direction:"center", className:"admin-label admin-label-"+level});
-               }
-             }); 
-             
-             adminLayers[key] = layer;
-             adminLayerLevels[key] = level;
-             return layer;
-          } catch(e){}
+            var resp = await fetch(candidates[i]);
+            if (!resp.ok) continue;
+            var gj = await resp.json();
+
+            // Create layer but DO NOT add to map yet (keep clean)
+            var layer = L.geoJSON(gj, {
+              style: styleFor(level),
+              onEachFeature: function (feature, lyr) {
+                var props = feature.properties || {};
+                var name = props.WADMKD || props.WADMKC || props.WADMKK || props.WADMPR || props.NAMOBJ || "";
+                lyr.bindTooltip(String(name), { permanent: true, direction: "center", className: "admin-label admin-label-" + level });
+              },
+            });
+
+            adminLayers[key] = layer;
+            adminLayerLevels[key] = level;
+            return layer;
+          } catch (e) {}
         }
         throw new Error("Gagal memuat layer admin: " + key);
       }
 
       function keyForLevel(level) {
-        if(level === "prov") return "WADMPR";
-        if(level === "kab") return "WADMKK";
-        if(level === "kec") return "WADMKC";
+        if (level === "prov") return "WADMPR";
+        if (level === "kab") return "WADMKK";
+        if (level === "kec") return "WADMKC";
         return "WADMKD";
       }
       function urlForKey(key) {
@@ -1557,7 +1708,9 @@
         return function () {
           var args = arguments;
           clearTimeout(t);
-          t = setTimeout(function () { fn.apply(null, args); }, wait);
+          t = setTimeout(function () {
+            fn.apply(null, args);
+          }, wait);
         };
       }
 
@@ -1604,7 +1757,7 @@
                 list.push(n);
               }
             });
-            resolve(list.sort((a,b)=>a.localeCompare(b)));
+            resolve(list.sort((a, b) => a.localeCompare(b)));
           });
         }
 
@@ -1623,8 +1776,8 @@
             item.style.borderBottom = "1px solid #f1f1f1";
             item.style.cursor = "pointer";
             item.textContent = arr[i];
-            (function(val){
-              item.onclick = function() {
+            (function (val) {
+              item.onclick = function () {
                 queryInput.value = val;
                 suggestionBox.style.display = "none";
                 document.getElementById("btn_admin_search").click();
@@ -1636,27 +1789,33 @@
         }
 
         function updateSuggestionsForQuery(q) {
-           var level = document.getElementById("search_admin_level").value;
-           var key = keyForLevel(level);
-           
-           // Ensure layer is loaded first to get names
-           var promiseLayer = adminLayers[key] 
-               ? Promise.resolve() 
-               : loadAdminGeojson(key, urlForKey(key), level);
+          var level = document.getElementById("search_admin_level").value;
+          var key = keyForLevel(level);
 
-           promiseLayer.then(() => getNamesFromLayer(key)).then(function(list){
-               if(!q) { suggestionBox.style.display="none"; return; }
-               var mq = q.toLowerCase();
-               var filtered = list.filter(s => s.toLowerCase().indexOf(mq) !== -1);
-               showSuggestions(filtered);
-           }).catch(console.warn);
+          // Ensure layer is loaded first to get names
+          var promiseLayer = adminLayers[key] ? Promise.resolve() : loadAdminGeojson(key, urlForKey(key), level);
+
+          promiseLayer
+            .then(() => getNamesFromLayer(key))
+            .then(function (list) {
+              if (!q) {
+                suggestionBox.style.display = "none";
+                return;
+              }
+              var mq = q.toLowerCase();
+              var filtered = list.filter((s) => s.toLowerCase().indexOf(mq) !== -1);
+              showSuggestions(filtered);
+            })
+            .catch(console.warn);
         }
 
         var debouncedUpdate = debounce(function () {
           updateSuggestionsForQuery(queryInput.value.trim());
         }, 300);
         queryInput.addEventListener("input", debouncedUpdate);
-        queryInput.addEventListener("blur", function(){ setTimeout(()=>suggestionBox.style.display="none", 200); });
+        queryInput.addEventListener("blur", function () {
+          setTimeout(() => (suggestionBox.style.display = "none"), 200);
+        });
 
         // 3. Search & Highlight Logic
         function searchInLayer(key, q) {
@@ -1665,93 +1824,102 @@
             if (!layer) return reject("Layer not loaded");
             var matches = [];
             layer.eachLayer(function (l) {
-               var name = matchName(l.feature.properties);
-               if (name && name.toLowerCase().indexOf(q.toLowerCase()) !== -1) {
-                 matches.push({ name: name, layer: l, feature: l.feature });
-               }
+              var name = matchName(l.feature.properties);
+              if (name && name.toLowerCase().indexOf(q.toLowerCase()) !== -1) {
+                matches.push({ name: name, layer: l, feature: l.feature });
+              }
             });
             resolve(matches);
           });
         }
 
         function hideAllAdminLayers() {
-          Object.values(adminLayers).forEach(function(l) { 
-               if(l && map.hasLayer(l)) map.removeLayer(l); 
-           });
+          Object.values(adminLayers).forEach(function (l) {
+            if (l && map.hasLayer(l)) map.removeLayer(l);
+          });
         }
 
         function showResultsList(matches) {
-           var container = document.getElementById("admin_search_results");
-           container.innerHTML = "";
-           
-           // Clean up
-           hideAllAdminLayers();
-           if(highlightLayer) map.removeLayer(highlightLayer);
+          var container = document.getElementById("admin_search_results");
+          container.innerHTML = "";
 
-           if (!matches || matches.length === 0) {
-             container.innerHTML = '<div class="small">Tidak ditemukan.</div>';
-             return;
-           }
-           
-           // Highlight ALL matches (Outline Only)
-           var fc = { type: "FeatureCollection", features: matches.map(m=>m.feature) };
-           highlightLayer = L.geoJSON(fc, { 
-               style: {color:"#ff7800", weight:4, fill:false, opacity:1} 
-           }).addTo(map);
+          // Clean up
+          hideAllAdminLayers();
+          if (highlightLayer) map.removeLayer(highlightLayer);
 
-           try { 
-               var b = highlightLayer.getBounds();
-               if(b.isValid()) map.fitBounds(b, {padding:[20,20], maxZoom:14}); 
-           } catch(e){}
+          if (!matches || matches.length === 0) {
+            container.innerHTML = '<div class="small">Tidak ditemukan.</div>';
+            return;
+          }
 
-           // List items
-           matches.forEach(function (m, idx) {
-             var row = document.createElement("div");
-             row.style.padding = "6px";
-             row.style.borderBottom = "1px solid #eee";
-             row.style.cursor = "pointer";
-             row.innerHTML = "<b>" + (idx + 1) + "</b> " + m.name;
-             
-             row.onclick = function(){
-                if(highlightLayer) map.removeLayer(highlightLayer);
-                
-                // Highlight ONLY this one
-                highlightLayer = L.geoJSON(m.feature, { 
-                    style: {color:"#ff7800", weight:4, fill:false, opacity:1} 
-                }).addTo(map);
+          // Highlight ALL matches (Outline Only)
+          var fc = { type: "FeatureCollection", features: matches.map((m) => m.feature) };
+          highlightLayer = L.geoJSON(fc, {
+            style: { color: "#ff7800", weight: 4, fill: false, opacity: 1 },
+          }).addTo(map);
 
-                var b = highlightLayer.getBounds();
-                map.fitBounds(b, {padding:[20,20], maxZoom:15});
-                
-                // --- NEW: APPLY FILTER ---
-                applyAdminFilter(m.feature);
-             };
-             container.appendChild(row);
-           });
+          try {
+            var b = highlightLayer.getBounds();
+            if (b.isValid()) map.fitBounds(b, { padding: [20, 20], maxZoom: 14 });
+          } catch (e) {}
+
+          // List items
+          matches.forEach(function (m, idx) {
+            var row = document.createElement("div");
+            row.style.padding = "6px";
+            row.style.borderBottom = "1px solid #eee";
+            row.style.cursor = "pointer";
+            row.innerHTML = "<b>" + (idx + 1) + "</b> " + m.name;
+
+            row.onclick = function () {
+              if (highlightLayer) map.removeLayer(highlightLayer);
+
+              // Highlight ONLY this one
+              highlightLayer = L.geoJSON(m.feature, {
+                style: { color: "#ff7800", weight: 4, fill: false, opacity: 1 },
+              }).addTo(map);
+
+              var b = highlightLayer.getBounds();
+              map.fitBounds(b, { padding: [20, 20], maxZoom: 15 });
+
+              // --- NEW: APPLY FILTER ---
+              applyAdminFilter(m.feature);
+            };
+            container.appendChild(row);
+          });
         }
 
         document.getElementById("btn_admin_search").addEventListener("click", function () {
           var level = document.getElementById("search_admin_level").value;
           var q = document.getElementById("search_admin_query").value.trim();
-          if (!q) { alert("Masukkan nama wilayah."); return; }
+          if (!q) {
+            alert("Masukkan nama wilayah.");
+            return;
+          }
           var key = keyForLevel(level);
-          
-          if(!adminLayers[key]) {
-             loadAdminGeojson(key, urlForKey(key), level).then(function(){
+
+          if (!adminLayers[key]) {
+            loadAdminGeojson(key, urlForKey(key), level)
+              .then(function () {
                 return searchInLayer(key, q);
-             }).then(showResultsList).catch(err => alert(err));
+              })
+              .then(showResultsList)
+              .catch((err) => alert(err));
           } else {
-             searchInLayer(key, q).then(showResultsList);
+            searchInLayer(key, q).then(showResultsList);
           }
         });
 
         document.getElementById("btn_admin_clear").addEventListener("click", function () {
           queryInput.value = "";
           document.getElementById("admin_search_results").innerHTML = "";
-          if(highlightLayer) { map.removeLayer(highlightLayer); highlightLayer = null; }
+          if (highlightLayer) {
+            map.removeLayer(highlightLayer);
+            highlightLayer = null;
+          }
           hideAllAdminLayers();
           adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
-          
+
           // --- NEW: CLEAR FILTER ---
           clearAdminFilter();
         });
