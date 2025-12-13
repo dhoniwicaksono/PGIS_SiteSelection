@@ -638,8 +638,12 @@
         
         <!-- 6. RAWAN BENCANA (BNPB) -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">6. Kerawanan Bencana</div>
-        <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_tsunami" /> Bahaya Tsunami (Inarisk) </label>
-        <div style="font-size:10px; color:#777; margin-left:24px;">Sumber: BNPB ImageServer</div>
+        <div style="font-size:10px; color:#777; margin-bottom: 4px; margin-left:24px;">Sumber: BNPB ImageServer</div>
+        
+        <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_tsunami" /> Bahaya Tsunami </label>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_gempa" /> Bahaya Gempa Bumi </label>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_longsor" /> Bahaya Tanah Longsor </label>
+        <label class="ctrl-label"> <input type="checkbox" id="layer_bencana_erupsi" /> Bahaya Erupsi Gunungapi </label>
 
       </div>
 
@@ -1271,109 +1275,110 @@
       });
 
       // --- 6. BENCANA (BNPB - ESRI) ---
-      var bnpbTsunamiLayer = null;
-      var hasErrorShown = false; // Flag to prevent multiple alerts
+      // Variable to store multiple layer references
+      var bnpbLayers = {};
 
       // Create a specific Pane for Disaster Layers to ensure they are ABOVE basemaps but BELOW markers
       map.createPane('bencanaPane');
       map.getPane('bencanaPane').style.zIndex = 300; // Above TilePane (200), below OverlayPane (400) & MarkerPane (600)
       map.getPane('bencanaPane').style.pointerEvents = 'none'; // Allow clicks to pass through to map
 
-      document.getElementById("layer_bencana_tsunami").addEventListener("change", function(e) {
-        var loader = document.getElementById("loading-indicator");
-        
-        if (e.target.checked) {
-          // Check dependency
-          if (typeof L.esri === 'undefined') {
-            alert("Library Esri Leaflet belum siap. Mohon tunggu sejenak atau refresh halaman.");
-            e.target.checked = false;
-            return;
-          }
-
-          // Initialize if null
-          if (!bnpbTsunamiLayer) {
-            bnpbTsunamiLayer = L.esri.imageMapLayer({
-              // UPDATED SOURCE (Confirmed by User)
-              url: 'https://gis.bnpb.go.id/server/rest/services/inarisk/layer_bahaya_tsunami/ImageServer',
-              opacity: 0.7,
-              attribution: 'BNPB InaRisk',
-              pane: 'bencanaPane' // FORCE LAYER INTO OUR CUSTOM HIGH-ZINDEX PANE
-            });
-
-            // Feedback Events (Loading Indicator)
-            bnpbTsunamiLayer.on('loading', function() {
-              loader.style.display = 'block';
-              document.body.style.cursor = 'wait';
-            });
-            
-            bnpbTsunamiLayer.on('load', function() {
-              loader.style.display = 'none';
-              document.body.style.cursor = 'default';
-            });
-
-            // ERROR HANDLING: PREVENT SPAM & CIRCULAR OBJECT ERROR
-            bnpbTsunamiLayer.on('error', function(ev) {
-              loader.style.display = 'none';
-              document.body.style.cursor = 'default';
-              
-              // Extract meaningful message, avoid circular JSON error
-              var msg = "Unknown error";
-              if (ev && ev.error && ev.error.message) msg = ev.error.message;
-              else if (ev && ev.message) msg = ev.message;
-
-              console.warn("BNPB Layer Issue: " + msg);
-
-              if (!hasErrorShown) {
-                alert("Gagal memuat layer BNPB (" + msg + "). Layer mungkin tidak tersedia saat ini.");
-                hasErrorShown = true;
-                
-                // Uncheck the box visually
-                document.getElementById("layer_bencana_tsunami").checked = false;
-
-                // FIX: Use setTimeout to remove layer asynchronously.
-                // Removing the layer immediately while the error event is still firing 
-                // causes the 'Cannot read properties of null' error in Leaflet/Esri internals.
-                setTimeout(function() {
-                    if(bnpbTsunamiLayer && map.hasLayer(bnpbTsunamiLayer)) {
-                        map.removeLayer(bnpbTsunamiLayer);
-                    }
-                    // Reset variable so we try a fresh connection next time
-                    bnpbTsunamiLayer = null; 
-                }, 100);
-              }
-            });
-          }
+      // Generic helper to toggle BNPB ImageServer Layers
+      function toggleBnpbLayer(layerKey, url, isChecked) {
+          var loader = document.getElementById("loading-indicator");
           
-          bnpbTsunamiLayer.addTo(map);
-          // bnpbTsunamiLayer.bringToFront(); // No longer needed because we use custom Pane Z-Index
+          if (isChecked) {
+              if (typeof L.esri === 'undefined') {
+                  alert("Library Esri Leaflet belum siap. Mohon tunggu sejenak atau refresh halaman.");
+                  document.getElementById("layer_bencana_" + layerKey).checked = false;
+                  return;
+              }
 
-          // UX IMPROVEMENT: Auto-pan to South Coast if user is currently in Jogja City area
-          // This ensures they see the data immediately instead of staring at empty city map
-          var center = map.getCenter();
-          if (center.lat > -7.9 && center.lat < -7.0 && center.lng > 110.0 && center.lng < 111.0) {
-             map.setView([-8.02, 110.35], 13); // Coordinate near Parangtritis
-             
-             // Show loader momentarily during pan/fetch
-             loader.style.display = 'block';
-             
-             // Use a small timeout to allow map to move before alerting
-             setTimeout(function() {
-               if (!hasErrorShown) {
-                  alert("Peta digeser ke pesisir selatan untuk menampilkan area Bahaya Tsunami.");
-               }
-             }, 500);
+              // Create layer if not exists
+              if (!bnpbLayers[layerKey]) {
+                  var lyr = L.esri.imageMapLayer({
+                      url: url,
+                      opacity: 0.7,
+                      attribution: 'BNPB InaRisk',
+                      pane: 'bencanaPane'
+                  });
+                  
+                  // Feedback Events
+                  lyr.on('loading', function() {
+                      loader.style.display = 'block';
+                      document.body.style.cursor = 'wait';
+                  });
+                  lyr.on('load', function() {
+                      loader.style.display = 'none';
+                      document.body.style.cursor = 'default';
+                  });
+
+                  // Error Handling
+                  lyr.on('error', function(ev) {
+                      loader.style.display = 'none';
+                      document.body.style.cursor = 'default';
+                      
+                      var msg = "Unknown error";
+                      if (ev && ev.error && ev.error.message) msg = ev.error.message;
+                      else if (ev && ev.message) msg = ev.message;
+
+                      console.warn("BNPB Layer Issue (" + layerKey + "): " + msg);
+                      
+                      alert("Gagal memuat layer (" + msg + "). Layer mungkin tidak tersedia.");
+                      
+                      // Async Removal
+                      document.getElementById("layer_bencana_" + layerKey).checked = false;
+                      setTimeout(function() {
+                          if (bnpbLayers[layerKey] && map.hasLayer(bnpbLayers[layerKey])) {
+                              map.removeLayer(bnpbLayers[layerKey]);
+                          }
+                          bnpbLayers[layerKey] = null;
+                      }, 100);
+                  });
+
+                  bnpbLayers[layerKey] = lyr;
+              }
+
+              bnpbLayers[layerKey].addTo(map);
+
+              // Specific Logic for Tsunami (Auto Pan to Coast)
+              if (layerKey === 'tsunami') {
+                  var center = map.getCenter();
+                  // If in Jogja city area, move to coast
+                  if (center.lat > -7.9 && center.lat < -7.0 && center.lng > 110.0 && center.lng < 111.0) {
+                      map.setView([-8.02, 110.35], 13);
+                      loader.style.display = 'block';
+                      setTimeout(function() {
+                           alert("Peta digeser ke pesisir selatan untuk menampilkan area Bahaya Tsunami.");
+                      }, 500);
+                  }
+              }
+
           } else {
-             if (!hasErrorShown) {
-                alert("Layer Tsunami aktif. Silakan geser peta ke area pesisir pantai untuk melihat data.");
-             }
+              // Remove Layer
+              if (bnpbLayers[layerKey] && map.hasLayer(bnpbLayers[layerKey])) {
+                  map.removeLayer(bnpbLayers[layerKey]);
+                  loader.style.display = 'none';
+              }
           }
+      }
 
-        } else {
-          if (bnpbTsunamiLayer && map.hasLayer(bnpbTsunamiLayer)) {
-            map.removeLayer(bnpbTsunamiLayer);
-            loader.style.display = 'none'; // Ensure hidden
+      // Configuration for BNPB Layers
+      var bnpbConfigs = [
+          { key: 'tsunami', url: 'https://gis.bnpb.go.id/server/rest/services/inarisk/layer_bahaya_tsunami/ImageServer' },
+          { key: 'gempa',   url: 'https://gis.bnpb.go.id/server/rest/services/inarisk/layer_bahaya_gempabumi/ImageServer' },
+          { key: 'longsor', url: 'https://gis.bnpb.go.id/server/rest/services/inarisk/layer_bahaya_tanah_longsor/ImageServer' },
+          { key: 'erupsi',  url: 'https://gis.bnpb.go.id/server/rest/services/inarisk/layer_bahaya_letusan_gunungapi/ImageServer' }
+      ];
+
+      // Bind Listeners
+      bnpbConfigs.forEach(function(conf) {
+          var el = document.getElementById("layer_bencana_" + conf.key);
+          if (el) {
+              el.addEventListener("change", function(e) {
+                  toggleBnpbLayer(conf.key, conf.url, e.target.checked);
+              });
           }
-        }
       });
 
 
