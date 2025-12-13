@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
+    <!-- Turf.js for Spatial Analysis (Buffer & Filtering) -->
+    <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+
     <style>
       html,
       body {
@@ -339,7 +342,6 @@
       </select>
 
       <label>Mapping Object <span style="color:red">*</span></label>
-      <!-- REVISI: Point ID akan bergantung pada field ini -->
       <input type="text" id="mapping_object" placeholder="Contoh: Perdagangan-Jasa" />
 
       <label>Point ID (auto)</label>
@@ -369,7 +371,6 @@
       <div class="small"><b>Points collected:</b></div>
       <div id="pointsCount">0 points</div>
 
-      <!-- UPDATED TABLE WITH REASON COLUMN -->
       <table id="pointsTable" style="display: none">
         <thead>
           <tr>
@@ -443,7 +444,6 @@
           <div class="legend-item"><span class="legend-symbol sym-h" style="color: #1a9850">H</span>Puskesmas</div>
         </div>
 
-        <!-- REVISI KLINIK -->
         <label class="ctrl-label"> <input type="checkbox" id="layer_klinik" /> Klinik </label>
         <div id="legend_klinik" style="margin-left: 24px; margin-top: 4px; display: none">
           <div class="legend-item"><span class="legend-symbol sym-h" style="color: #00441b">H</span>Klinik Umum</div>
@@ -825,14 +825,29 @@
       // --- LAYER LOADERS (Apply Text Wrapping Here) ---
       
       var layerStorage = {};
+      var originalLayerData = {}; // Store raw GeoJSON for resetting
+      var activeLayerConfigs = {}; // Store config (shapeType, colorFunc) to re-render
+      var currentFilterPoly = null; // Buffer polygon for filtering
 
-      function loadLayer(key, url, shapeType, colorFunc) {
-        if (layerStorage[key]) {
-          map.addLayer(layerStorage[key]);
-          return;
-        }
-        fetchGeoJSON(url).then(function (data) {
-          var lyr = L.geoJSON(data, {
+      function filterData(data, poly) {
+         // Filter GeoJSON features based on polygon inclusion
+         if (!data || !data.features) return data;
+         var filteredFeatures = data.features.filter(function(f) {
+             return turf.booleanPointInPolygon(f, poly);
+         });
+         return { type: "FeatureCollection", features: filteredFeatures };
+      }
+
+      function renderLayer(key, data) {
+         var config = activeLayerConfigs[key];
+         if (!config) return;
+
+         // Remove existing if any (refresh)
+         if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
+             map.removeLayer(layerStorage[key]);
+         }
+
+         var lyr = L.geoJSON(data, {
             coordsToLatLng: function (coords) {
               if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
                   var latlon = mercatorToLatLon(coords[0], coords[1]);
@@ -843,21 +858,43 @@
             pointToLayer: function (feature, latlng) {
               var p = feature.properties;
               var val = p.kategori || p.keterangan || "";
-              var color = colorFunc(val);
-              return createCustomMarker(latlng, shapeType, color, p);
+              var color = config.colorFunc(val);
+              return createCustomMarker(latlng, config.shapeType, color, p);
             },
             onEachFeature: function (feature, layer) {
               var p = feature.properties;
               var nm = p.namobj || key;
               layer.bindPopup("<b>" + nm + "</b><br/>" + (p.keterangan || p.kategori || "-"));
               if (p.namobj) {
-                // APPLY FORMATTING HERE (2 words per line)
                 var formattedLabel = formatLabelText(p.namobj);
                 layer.bindTooltip(formattedLabel, { permanent: true, direction: "top", className: "feature-label", offset: [0, -8] });
               }
             }
           }).addTo(map);
           layerStorage[key] = lyr;
+      }
+
+      function loadLayer(key, url, shapeType, colorFunc) {
+        activeLayerConfigs[key] = { shapeType: shapeType, colorFunc: colorFunc };
+        
+        // If already loaded/filtered, just add (unless we need to refetch?)
+        // Better to check if we have data. If we have original data, we just render (filtered or not)
+        if (originalLayerData[key]) {
+            var dataToRender = originalLayerData[key];
+            if (currentFilterPoly) {
+                dataToRender = filterData(dataToRender, currentFilterPoly);
+            }
+            renderLayer(key, dataToRender);
+            return;
+        }
+
+        fetchGeoJSON(url).then(function (data) {
+          originalLayerData[key] = data; // Save raw
+          var dataToRender = data;
+          if (currentFilterPoly) {
+               dataToRender = filterData(data, currentFilterPoly);
+          }
+          renderLayer(key, dataToRender);
         }).catch(err => {
           console.error("Layer error " + key, err);
           alert("Gagal memuat layer: " + key + "\nFile mungkin tidak ditemukan: " + url);
@@ -865,12 +902,12 @@
       }
 
       // --- Custom Cluster for Education (Circle) ---
-      function loadSekolahCluster() {
-        if (layerStorage['sekolah']) {
-          map.addLayer(layerStorage['sekolah']);
-          return;
-        }
-        var cluster = L.markerClusterGroup({
+      function renderSekolah(data) {
+         if (layerStorage['sekolah'] && map.hasLayer(layerStorage['sekolah'])) {
+             map.removeLayer(layerStorage['sekolah']);
+         }
+         
+         var cluster = L.markerClusterGroup({
           spiderfyShapePositions: function (count, centerPt) {
             var distanceFromCenter = 35, markerDistance = 45, lineLength = markerDistance * (count - 1),
                 lineStart = centerPt.y - lineLength / 2, res = [];
@@ -881,8 +918,7 @@
           }
         });
 
-        fetchGeoJSON("ONLINE_DIKPORA_SEKOLAH_DASAR_MENENGAH_PT.geojson").then(data => {
-          var gj = L.geoJSON(data, {
+         var gj = L.geoJSON(data, {
              coordsToLatLng: function (coords) {
                 if (Math.abs(coords[0]) > 180 || Math.abs(coords[1]) > 180) {
                   var latlon = mercatorToLatLon(coords[0], coords[1]);
@@ -899,20 +935,80 @@
               var p = feature.properties;
               layer.bindPopup("<b>" + (p.namobj||"Sekolah") + "</b><br/>" + (p.keterangan||"-"));
               if(p.namobj) {
-                 // APPLY FORMATTING HERE (2 words per line)
                  var formattedLabel = formatLabelText(p.namobj);
                  layer.bindTooltip(formattedLabel, {permanent:true, direction:"top", className:"feature-label", offset:[0,-8]});
               }
             }
-          });
-          cluster.addLayer(gj);
-          map.addLayer(cluster);
-          layerStorage['sekolah'] = cluster;
+         });
+         cluster.addLayer(gj);
+         map.addLayer(cluster);
+         layerStorage['sekolah'] = cluster;
+      }
+
+      function loadSekolahCluster() {
+        if (originalLayerData['sekolah']) {
+             var data = originalLayerData['sekolah'];
+             if(currentFilterPoly) data = filterData(data, currentFilterPoly);
+             renderSekolah(data);
+             return;
+        }
+
+        fetchGeoJSON("ONLINE_DIKPORA_SEKOLAH_DASAR_MENENGAH_PT.geojson").then(data => {
+          originalLayerData['sekolah'] = data;
+          var dataToRender = data;
+          if(currentFilterPoly) dataToRender = filterData(data, currentFilterPoly);
+          renderSekolah(dataToRender);
         }).catch(err => {
              console.error("Layer error sekolah", err);
              alert("Gagal memuat layer Sekolah");
         });
       }
+
+      // --- FILTERING LOGIC ---
+      function applyAdminFilter(feature) {
+          // 1. Create Buffer 1km
+          var buffered = turf.buffer(feature, 1, {units: 'kilometers'});
+          currentFilterPoly = buffered;
+
+          // 2. Refresh all active layers
+          Object.keys(activeLayerConfigs).forEach(function(key) {
+             // Only if layer is currently on map (checked)
+             if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
+                 var raw = originalLayerData[key];
+                 if(raw) {
+                     var filtered = filterData(raw, currentFilterPoly);
+                     renderLayer(key, filtered);
+                 }
+             }
+          });
+
+          // Refresh Sekolah if active
+          if (layerStorage['sekolah'] && map.hasLayer(layerStorage['sekolah'])) {
+              var raw = originalLayerData['sekolah'];
+              if(raw) {
+                  var filtered = filterData(raw, currentFilterPoly);
+                  renderSekolah(filtered);
+              }
+          }
+      }
+
+      function clearAdminFilter() {
+          currentFilterPoly = null;
+          
+          // Restore all
+          Object.keys(activeLayerConfigs).forEach(function(key) {
+             if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
+                 var raw = originalLayerData[key];
+                 if(raw) renderLayer(key, raw);
+             }
+          });
+          
+          if (layerStorage['sekolah'] && map.hasLayer(layerStorage['sekolah'])) {
+              var raw = originalLayerData['sekolah'];
+              if(raw) renderSekolah(raw);
+          }
+      }
+
 
       // --- Event Listeners ---
       
@@ -1593,6 +1689,9 @@
 
                 var b = highlightLayer.getBounds();
                 map.fitBounds(b, {padding:[20,20], maxZoom:15});
+                
+                // --- NEW: APPLY FILTER ---
+                applyAdminFilter(m.feature);
              };
              container.appendChild(row);
            });
@@ -1619,6 +1718,9 @@
           if(highlightLayer) { map.removeLayer(highlightLayer); highlightLayer = null; }
           hideAllAdminLayers();
           adminLayers = { WADMPR: null, WADMKK: null, WADMKC: null, WADMKD: null };
+          
+          // --- NEW: CLEAR FILTER ---
+          clearAdminFilter();
         });
       })();
     </script>
