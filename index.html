@@ -38,6 +38,35 @@
         font-family: Arial, Helvetica, sans-serif;
       }
 
+      /* TOP BAR / HEADER */
+      #topbar {
+        position: absolute;
+        top: 8px;
+        left: 340px; /* Start after left sidebar */
+        right: 340px; /* End before right sidebar */
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 8px 15px;
+        border-radius: 6px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+        font-family: 'Inter', sans-serif; /* Using a modern, bold font style */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border-left: 5px solid #2c7be5;
+        transition: left 0.3s ease, right 0.3s ease;
+      }
+
+      #topbar h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
       /* Left sidebar (Form) */
       #sidebar {
         position: absolute;
@@ -79,6 +108,16 @@
       }
 
       @media (max-width: 1024px) {
+        #topbar {
+          /* On mobile, stack it above the map, spanning the full width */
+          left: 0;
+          right: 0;
+          top: 0;
+          border-radius: 0;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+          padding: 10px;
+        }
+
         #sidebar,
         #sidebarRight {
           position: fixed;
@@ -437,6 +476,11 @@
   <body>
     <div id="map"></div>
     
+    <!-- TOP BAR / HEADER -->
+    <div id="topbar">
+        <h1>PETA – Participatory Evidence-based Territorial Analytics</h1>
+    </div>
+
     <!-- Loading Indicator Element -->
     <div id="loading-indicator">
       <span class="spinner"></span>Memuat Data Layer...
