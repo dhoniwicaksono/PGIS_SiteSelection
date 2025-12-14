@@ -1652,6 +1652,9 @@
         // Sort descending
         results.sort(function(a,b){return b.count - a.count;});
 
+        // Keep last analysis data for export/fallback
+        window.adminAnalysisData = results;
+
         updateAdminChart(results);
       }
 
@@ -1689,6 +1692,41 @@
           window.adminChart = null;
         }
 
+        // If Chart.js is not available, render a textual fallback summary
+        if (typeof Chart === 'undefined') {
+          console.error('Chart.js not available — rendering textual fallback.');
+          // hide canvas and create a fallback div
+          canvas.style.display = 'none';
+          var parent = canvas.parentNode;
+          var fallbackId = 'adminChartFallback';
+          var existing = document.getElementById(fallbackId);
+          if (existing) existing.parentNode.removeChild(existing);
+          var fallback = document.createElement('div');
+          fallback.id = fallbackId;
+          fallback.style.width = (canvas.width || 220) + 'px';
+          fallback.style.height = (canvas.height || 160) + 'px';
+          fallback.style.overflow = 'auto';
+          fallback.style.padding = '6px';
+          fallback.style.boxSizing = 'border-box';
+          fallback.style.background = '#fafafa';
+          fallback.style.border = '1px solid #eee';
+          if (data.length === 0) {
+            fallback.innerHTML = '<div style="color:#666;font-size:13px">Tidak ada fitur aktif di wilayah ini.</div>';
+          } else {
+            var html = '<table style="width:100%;font-size:13px;border-collapse:collapse"><tbody>';
+            for (var i=0;i<data.length;i++){
+              html += '<tr><td style="padding:4px 6px;border-bottom:1px solid #f1f1f1">'+escapeHtml(data[i].label)+'</td><td style="padding:4px 6px;border-bottom:1px solid #f1f1f1;text-align:right">'+data[i].count+'</td></tr>';
+            }
+            html += '</tbody></table>';
+            fallback.innerHTML = html;
+          }
+          parent.insertBefore(fallback, canvas.nextSibling);
+          // ensure export buttons still work (CSV uses window.adminAnalysisData)
+          var container = document.getElementById('admin_analysis');
+          if (container) container.style.display = 'block';
+          return;
+        }
+
         // Build plugins list only if datalabels plugin is available
         var pluginsList = [];
         var optionsPlugins = { legend: { display: false } };
@@ -1697,6 +1735,7 @@
           optionsPlugins.datalabels = { anchor: 'end', align: 'right', color: '#111', font: { weight: '600' }, formatter: function(v){return v;} };
         }
 
+        canvas.style.display = '';
         window.adminChart = new Chart(ctx, {
           type: 'bar',
           data: {
@@ -1968,11 +2007,21 @@
       var _btn_csv = document.getElementById('btn_export_csv');
       if (_btn_csv) _btn_csv.addEventListener('click', function(){
         try {
-          if (!window.adminChart) { alert('Tidak ada data untuk diekspor'); return; }
-          var labels = window.adminChart.data.labels || [];
-          var data = (window.adminChart.data.datasets && window.adminChart.data.datasets[0].data) || [];
+          // Prefer chart data, but fall back to window.adminAnalysisData
+          var labels = [];
+          var data = [];
+          if (window.adminChart && window.adminChart.data) {
+            labels = window.adminChart.data.labels || [];
+            data = (window.adminChart.data.datasets && window.adminChart.data.datasets[0].data) || [];
+          } else if (window.adminAnalysisData) {
+            labels = window.adminAnalysisData.map(d=>d.label);
+            data = window.adminAnalysisData.map(d=>d.count);
+          } else {
+            alert('Tidak ada data untuk diekspor');
+            return;
+          }
           var csv = 'label,count\n';
-          for (var i=0;i<labels.length;i++) csv += '"'+labels[i].replace(/"/g,'""')+'",'+(data[i]||0)+'\n';
+          for (var i=0;i<labels.length;i++) csv += '"'+String(labels[i]).replace(/"/g,'""')+'",'+(data[i]||0)+'\n';
           var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
           var url = URL.createObjectURL(blob);
           var a = document.createElement('a');
