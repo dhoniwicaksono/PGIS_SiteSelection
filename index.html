@@ -947,6 +947,10 @@
         </div>
         <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 8px">
           <div style="font-size: 12px; color: #333; font-weight: 600; margin-bottom: 6px">Analyst by Area</div>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
+            <input id="admin_radius_m" type="number" min="0" placeholder="Radius (m) — kosong = default" style="width:160px; padding:6px; font-size:13px" />
+            <span style="font-size:11px; color:#666">(Meter — untuk mock fallback)</span>
+          </div>
           <button id="btn_show_analysis" class="btn tertiary" style="width: 80%; display: none">Analysis</button>
         </div>
       </div>
@@ -2918,8 +2922,18 @@
         // Create buffered polygon using Turf.js (mock geometry)
         const center = [data.lon, data.lat];
         const point = turf.point(center);
-        const radius = data.type === "Kabupaten" ? 10 : data.type === "Kecamatan" ? 3 : 1.5;
-        const buffered = turf.buffer(point, radius, { units: "kilometers" });
+        // If user provided a radius (in meters) use it; otherwise use defaults (km)
+        var radiusKm;
+        try {
+          var rv = parseFloat((document.getElementById("admin_radius_m") || {}).value);
+          if (!isNaN(rv) && rv > 0) {
+            radiusKm = rv / 1000.0;
+          }
+        } catch (e) {}
+        if (typeof radiusKm === "undefined") {
+          radiusKm = data.type === "Kabupaten" ? 10 : data.type === "Kecamatan" ? 3 : 1.5;
+        }
+        const buffered = turf.buffer(point, radiusKm, { units: "kilometers" });
 
         // Set as active filter polygon (V6.4 uses currentFilterPoly)
         try {
