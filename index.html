@@ -1097,6 +1097,8 @@
         function pushUnique(u){ if (!u) return; if (candidates.indexOf(u) === -1) candidates.push(u); }
         pushUnique(url);
         if (!/^data\//i.test(url)) pushUnique('data/' + url);
+        pushUnique('PGIS_SiteSelection/' + url);
+        pushUnique('../PGIS_SiteSelection/' + url);
         pushUnique('../V5.0/data/' + url);
         pushUnique('../V4.0/data/' + url);
         pushUnique('../V5.0/' + url);
@@ -2502,7 +2504,7 @@
 
       async function loadAdminGeojson(key, url, level) {
         // Try multiple paths (Robust)
-        var candidates = [url, "data/" + url, url.toLowerCase(), url.replace(/\.geojson$/i, ".json")];
+        var candidates = [url, "PGIS_SiteSelection/" + url, "data/" + url, url.toLowerCase(), url.replace(/\.geojson$/i, ".json")];
 
         // Debug attempts
         window.adminFetchAttempts = window.adminFetchAttempts || [];
@@ -2864,6 +2866,30 @@
             if (typeof calculateStatsInPolygon === 'function') calculateStatsInPolygon();
           } catch (e) {}
         }
+
+        // --- Preload admin boundaries (quiet) ---
+        window.addEventListener('load', function () {
+          try {
+            // reset debug attempts
+            window.fetchDebugAttempts = [];
+            window.adminFetchAttempts = [];
+            try { var dbgEl = document.getElementById('fetch_debug'); if (dbgEl) dbgEl.innerHTML = ''; } catch(e){}
+
+            var keys = [
+              { key: 'WADMPR', level: 'prov' },
+              { key: 'WADMKK', level: 'kab' },
+              { key: 'WADMKC', level: 'kec' },
+              { key: 'WADMKD', level: 'desa' }
+            ];
+
+            keys.forEach(function (it) {
+              loadAdminGeojson(it.key, urlForKey(it.key), it.level).catch(function (err) {
+                // quietly ignore — fallback and debug panel will show attempts
+                console.debug('preload admin', it.key, 'failed', err);
+              });
+            });
+          } catch (e) {}
+        });
     </script>
   </body>
 </html>
