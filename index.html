@@ -673,6 +673,10 @@
 
         <!-- ADMIN ANALYSIS: Bar chart for selected administrative unit -->
         <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Analisis Wilayah</h4>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
+          <button id="btn_show_analysis" class="btn" style="padding:6px 8px; white-space:nowrap">Analisis</button>
+          <div style="flex:1; font-size:12px; color:#333; font-weight:600">Jumlah fasilitas aktif dalam wilayah</div>
+        </div>
         <div id="admin_analysis" style="margin-bottom:12px; display:none;">
           <div style="font-size:12px; color:#333; font-weight:600; margin-bottom:6px">Jumlah fasilitas aktif dalam wilayah</div>
           <div style="display:flex; gap:6px; align-items:flex-start">
@@ -1095,15 +1099,22 @@
         // Build candidate paths with common folders used across versions
         var candidates = [];
         function pushUnique(u){ if (!u) return; if (candidates.indexOf(u) === -1) candidates.push(u); }
-        pushUnique(url);
+        // Prefer local data folder first (user added files there)
         if (!/^data\//i.test(url)) pushUnique('data/' + url);
-        pushUnique('PGIS_SiteSelection/' + url);
-        pushUnique('../PGIS_SiteSelection/' + url);
+        pushUnique(url);
+
+        // Only add PGIS_SiteSelection prefix if not already present
+        if (!/^PGIS_SiteSelection\//i.test(url)) {
+          pushUnique('PGIS_SiteSelection/' + url);
+          pushUnique('../PGIS_SiteSelection/' + url);
+        }
+
+        pushUnique('./' + url);
         pushUnique('../V5.0/data/' + url);
         pushUnique('../V4.0/data/' + url);
         pushUnique('../V5.0/' + url);
         pushUnique('../V4.0/' + url);
-        pushUnique('./' + url);
+
         pushUnique(url.toLowerCase());
         pushUnique(url.replace(/\.geojson$/i, '.json'));
         // init debug store
@@ -1812,6 +1823,17 @@
         });
       })();
 
+      // Attach Analysis panel toggle
+      (function(){
+        var btn = document.getElementById('btn_show_analysis');
+        if (!btn) return;
+        btn.addEventListener('click', function(){
+          var el = document.getElementById('admin_analysis');
+          if (!el) return;
+          el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+        });
+      })();
+
       // --- Event Listeners ---
 
       // 1. Pemerintah
@@ -2504,7 +2526,14 @@
 
       async function loadAdminGeojson(key, url, level) {
         // Try multiple paths (Robust)
-        var candidates = [url, "PGIS_SiteSelection/" + url, "data/" + url, url.toLowerCase(), url.replace(/\.geojson$/i, ".json")];
+        // Build candidates preferring the `data/` folder where you placed files
+        var candidates = [];
+        function pushC(u){ if(!u) return; if(candidates.indexOf(u)===-1) candidates.push(u); }
+        if (!/^data\//i.test(url)) pushC('data/' + url);
+        pushC(url);
+        if (!/^PGIS_SiteSelection\//i.test(url)) pushC('PGIS_SiteSelection/' + url);
+        pushC(url.toLowerCase());
+        pushC(url.replace(/\.geojson$/i, '.json'));
 
         // Debug attempts
         window.adminFetchAttempts = window.adminFetchAttempts || [];
