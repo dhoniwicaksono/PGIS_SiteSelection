@@ -23,6 +23,9 @@
 
     <!-- Esri Leaflet (Added for BNPB Layer) -->
     <script src="https://unpkg.com/esri-leaflet@3.0.10/dist/esri-leaflet.js"></script>
+    <!-- Chart.js for analysis charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
     <style>
       html,
@@ -667,6 +670,21 @@
         </div>
 
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
+
+        <!-- ADMIN ANALYSIS: Bar chart for selected administrative unit -->
+        <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Analisis Wilayah</h4>
+        <div id="admin_analysis" style="margin-bottom:12px; display:none;">
+          <div style="font-size:12px; color:#333; font-weight:600; margin-bottom:6px">Jumlah fasilitas aktif dalam wilayah</div>
+          <div style="display:flex; gap:6px; align-items:flex-start">
+            <canvas id="adminChartCanvas" width="220" height="160" style="background:#fafafa; border:1px solid #eee; box-sizing:border-box"></canvas>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <button id="btn_export_png" class="btn" style="padding:6px 8px; white-space:nowrap">Export PNG</button>
+              <button id="btn_export_csv" class="btn" style="padding:6px 8px; white-space:nowrap">Export CSV</button>
+            </div>
+          </div>
+          <div id="admin_analysis_note" style="font-size:11px; color:#666; margin-top:6px">Pilih wilayah melalui "Search by Administrative" untuk melihat ringkasan.</div>
+        </div>
+
 
         <!-- 2. KESEHATAN -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">2. Fasilitas Kesehatan</div>
@@ -1550,6 +1568,13 @@
             renderSekolah(filtered);
           }
         }
+
+        // Generate analysis chart for the selected admin unit
+        try {
+          generateAdminAnalysis();
+        } catch (e) {
+          console.warn('Admin analysis error', e);
+        }
       }
 
       function clearAdminFilter() {
@@ -1567,7 +1592,129 @@
           var raw = originalLayerData["sekolah"];
           if (raw) renderSekolah(raw);
         }
+
+        // Clear analysis panel
+        clearAdminAnalysis();
       }
+
+      // --- ADMIN ANALYSIS: generate counts and render simple SVG bar chart ---
+      function getActiveLayerDisplayName(key) {
+        var mapNames = {
+          kantor: 'Kantor',
+          perkantoran: 'Perkantoran',
+          rs: 'Rumah Sakit',
+          puskesmas: 'Puskesmas',
+          klinik: 'Klinik',
+          sekolah: 'Sekolah',
+          kampus: 'Perg. Tinggi',
+          pasar: 'Pasar',
+          ibm: 'Industri',
+          bank: 'Bank',
+          dtw: 'Obj. Wisata',
+          hotel: 'Hotel'
+        };
+        return mapNames[key] || key;
+      }
+
+      function generateAdminAnalysis() {
+        var container = document.getElementById('admin_analysis');
+        var chart = document.getElementById('admin_analysis_chart');
+        if (!container || !chart) return;
+        container.style.display = 'block';
+
+        if (!currentFilterPoly) {
+          chart.innerHTML = '<div style="font-size:12px;color:#666">Tidak ada wilayah terpilih.</div>';
+          return;
+        }
+
+        var results = [];
+        Object.keys(activeLayerConfigs).forEach(function(key){
+          try {
+            if (layerStorage[key] && map.hasLayer(layerStorage[key])) {
+              var raw = originalLayerData[key];
+              if (!raw) return;
+              var filtered = filterData(raw, currentFilterPoly);
+              var count = (filtered && filtered.features) ? filtered.features.length : 0;
+              var color = '#777';
+              try { color = (activeLayerConfigs[key].colorFunc||function(){return '#777';})(''); } catch(e){}
+              results.push({ key: key, label: getActiveLayerDisplayName(key), count: count, color: color });
+            }
+          } catch (e) {}
+        });
+
+        // Also include sekolah if active (its storage may be a cluster)
+        if (layerStorage['sekolah'] && map.hasLayer(layerStorage['sekolah']) && originalLayerData['sekolah']) {
+          var f = filterData(originalLayerData['sekolah'], currentFilterPoly);
+          results.push({ key: 'sekolah', label: getActiveLayerDisplayName('sekolah'), count: (f && f.features)?f.features.length:0, color: getSekolahColor('') });
+        }
+
+        // Sort descending
+        results.sort(function(a,b){return b.count - a.count;});
+
+        updateAdminChart(results);
+      }
+
+      function clearAdminAnalysis(){
+        var container = document.getElementById('admin_analysis');
+        if (container) {
+          container.style.display = 'none';
+        }
+        try {
+          if (window.adminChart) {
+            window.adminChart.destroy();
+            window.adminChart = null;
+          }
+        } catch(e){}
+      }
+
+      function updateAdminChart(data) {
+        var canvas = document.getElementById('adminChartCanvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        if (!data || data.length === 0) {
+          clearAdminAnalysis();
+          canvas.style.background = '#fafafa';
+          return;
+        }
+
+        var labels = data.map(d=>d.label);
+        var counts = data.map(d=>d.count);
+        var colors = data.map(d=>d.color || '#777');
+
+        // Destroy previous chart if exists
+        if (window.adminChart) {
+          try { window.adminChart.destroy(); } catch(e){}
+          window.adminChart = null;
+        }
+
+        window.adminChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'Jumlah', data: counts, backgroundColor: colors }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: false,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              datalabels: { anchor: 'end', align: 'right', color: '#111', font: { weight: '600' }, formatter: function(v){return v;} }
+            },
+            scales: {
+              x: { beginAtZero: true, ticks: { precision:0 } },
+              y: { ticks: { autoSkip: false } }
+            }
+          },
+          plugins: [ChartDataLabels]
+        });
+
+        // show container
+        var container = document.getElementById('admin_analysis');
+        if (container) container.style.display = 'block';
+      }
+
+      function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c;}); }
 
       // --- Event Listeners ---
 
@@ -1796,6 +1943,34 @@
           }
         }
       }
+
+      // Export handlers for admin analysis
+      document.getElementById('btn_export_png').addEventListener('click', function(){
+        try {
+          if (!window.adminChart) { alert('Tidak ada chart untuk diekspor'); return; }
+          var link = document.createElement('a');
+          link.href = window.adminChart.toBase64Image();
+          link.download = 'admin_analysis.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch(e){ alert('Export PNG gagal: '+e.message); }
+      });
+
+      document.getElementById('btn_export_csv').addEventListener('click', function(){
+        try {
+          if (!window.adminChart) { alert('Tidak ada data untuk diekspor'); return; }
+          var labels = window.adminChart.data.labels || [];
+          var data = (window.adminChart.data.datasets && window.adminChart.data.datasets[0].data) || [];
+          var csv = 'label,count\n';
+          for (var i=0;i<labels.length;i++) csv += '"'+labels[i].replace(/"/g,'""')+'",'+(data[i]||0)+'\n';
+          var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = 'admin_analysis.csv';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        } catch(e){ alert('Export CSV gagal: '+e.message); }
+      });
 
       // Configuration for BNPB Layers
       var bnpbConfigs = [
