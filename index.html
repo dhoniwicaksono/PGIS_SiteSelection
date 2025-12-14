@@ -949,7 +949,7 @@
           <div style="font-size: 12px; color: #333; font-weight: 600; margin-bottom: 6px">Analyst by Area</div>
           <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
             <input id="admin_radius_m" type="number" min="0" placeholder="Radius (m) — kosong = default" style="width:160px; padding:6px; font-size:13px" />
-            <span style="font-size:11px; color:#666">(Meter — untuk mock fallback)</span>
+            <span style="font-size:11px; color:#666">(Meter)</span>
           </div>
           <button id="btn_show_analysis" class="btn tertiary" style="width: 80%; display: none">Analysis</button>
         </div>
@@ -1589,9 +1589,17 @@
 
       // --- FILTERING LOGIC ---
       function applyAdminFilter(feature) {
-        // 1. Create Buffer 1km
+        // 1. Create Buffer (default 1 km) — allow override from #admin_radius_m (meters)
+        var radiusKm;
+        try {
+          var rv = parseFloat((document.getElementById("admin_radius_m") || {}).value);
+          if (!isNaN(rv) && rv > 0) {
+            radiusKm = rv / 1000.0;
+          }
+        } catch (e) {}
+        if (typeof radiusKm === "undefined") radiusKm = 1; // default 1 km
         // Make sure feature is valid WGS84 (Admin layers seem to be WGS84 based on loader)
-        var buffered = turf.buffer(feature, 1, { units: "kilometers" });
+        var buffered = turf.buffer(feature, radiusKm, { units: "kilometers" });
         currentFilterPoly = buffered;
 
         // 2. Refresh all active layers
