@@ -672,7 +672,7 @@
         <hr style="border-top: 1px dashed #ddd; margin: 8px 0" />
 
         <!-- ADMIN ANALYSIS: Bar chart for selected administrative unit -->
-        <h4 style="margin: 6px 0; font-size: 14px; text-decoration: underline">Analisis Wilayah</h4>
+        <!-- Analyst by Area header removed here to avoid duplicate; kept in Tools section -->
         <!-- Analysis control moved to Tools section (below zoom controls) -->
         <div id="admin_analysis" style="margin-bottom: 12px; display: none">
           <div style="font-size: 12px; color: #333; font-weight: 600; margin-bottom: 6px">Jumlah fasilitas aktif dalam wilayah</div>
@@ -685,8 +685,6 @@
           </div>
           <div id="admin_analysis_note" style="font-size: 11px; color: #666; margin-top: 6px">Pilih wilayah melalui "Search by Administrative" untuk melihat ringkasan.</div>
         </div>
-        <button id="btn_toggle_fetch_debug" class="btn tertiary smallBtn" style="margin-top: 8px">Toggle Fetch Debug</button>
-        <div id="fetch_debug" style="display: none; margin-top: 8px; max-height: 160px; overflow: auto; font-size: 12px; border: 1px solid #eee; padding: 6px; background: #fff"></div>
 
         <!-- 2. KESEHATAN -->
         <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #333">2. Fasilitas Kesehatan</div>
@@ -944,8 +942,9 @@
           <button id="zoomInBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom In</button>
           <button id="zoomOutBtn" class="btn tertiary" style="width: 40%; text-align: center">Zoom Out</button>
         </div>
-        <div style="width:100%; display:flex; justify-content:center; margin-top:8px">
-          <button id="btn_show_analysis" class="btn tertiary" style="width: 80%;">Analisis</button>
+        <div style="width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:8px">
+          <div style="font-size:12px; color:#333; font-weight:600; margin-bottom:6px">Analyst by Area</div>
+          <button id="btn_show_analysis" class="btn tertiary" style="width: 80%">Analysis</button>
         </div>
       </div>
 
@@ -1122,21 +1121,7 @@
         // init debug store
         window.fetchDebugAttempts = window.fetchDebugAttempts || [];
 
-        function updateFetchDebugUI() {
-          try {
-            var el = document.getElementById("fetch_debug");
-            if (!el) return;
-            var html = '<div style="font-weight:600;margin-bottom:6px">Last fetch attempts</div>';
-            html += '<ol style="padding-left:18px;margin:0;font-size:12px">';
-            var arr = (window.fetchDebugAttempts || []).slice(-50).reverse();
-            for (var i = 0; i < arr.length; i++) {
-              var it = arr[i];
-              html += '<li style="margin-bottom:4px;color:#333">' + escapeHtml(it) + "</li>";
-            }
-            html += "</ol>";
-            el.innerHTML = html;
-          } catch (e) {}
-        }
+        // Fetch debug UI removed: debug attempts are still recorded in window.fetchDebugAttempts
 
         return new Promise(function (resolve, reject) {
           function tryFetch(idx) {
@@ -1149,9 +1134,7 @@
             try {
               window.fetchDebugAttempts.push(attemptUrl);
             } catch (e) {}
-            try {
-              updateFetchDebugUI();
-            } catch (e) {}
+            // debug UI removed
 
             fetch(attemptUrl)
               .then((r) => {
@@ -1863,17 +1846,7 @@
         });
       }
 
-      // Attach toggle for debug panel
-      (function () {
-        var btn = document.getElementById("btn_toggle_fetch_debug");
-        if (!btn) return;
-        btn.addEventListener("click", function () {
-          var el = document.getElementById("fetch_debug");
-          if (!el) return;
-          if (el.style.display === "none" || !el.style.display) el.style.display = "block";
-          else el.style.display = "none";
-        });
-      })();
+      // Fetch debug toggle removed
 
       // Attach Analysis panel toggle
       (function () {
@@ -2633,9 +2606,7 @@
               window.adminFetchAttempts.push(attempt);
             } catch (e) {}
             // update debug UI if present
-            try {
-              updateFetchDebugUI();
-            } catch (e) {}
+            // fetch debug UI removed
 
             var resp = await fetch(attempt);
             if (!resp.ok) continue;
@@ -2987,10 +2958,7 @@
           // reset debug attempts
           window.fetchDebugAttempts = [];
           window.adminFetchAttempts = [];
-          try {
-            var dbgEl = document.getElementById("fetch_debug");
-            if (dbgEl) dbgEl.innerHTML = "";
-          } catch (e) {}
+          // Fetch debug UI removed; attempts arrays still reset
 
           var keys = [
             { key: "WADMPR", level: "prov" },
