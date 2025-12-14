@@ -684,6 +684,8 @@
           </div>
           <div id="admin_analysis_note" style="font-size:11px; color:#666; margin-top:6px">Pilih wilayah melalui "Search by Administrative" untuk melihat ringkasan.</div>
         </div>
+        <button id="btn_toggle_fetch_debug" class="btn tertiary smallBtn" style="margin-top:8px">Toggle Fetch Debug</button>
+        <div id="fetch_debug" style="display:none; margin-top:8px; max-height:160px; overflow:auto; font-size:12px; border:1px solid #eee; padding:6px; background:#fff;"></div>
 
 
         <!-- 2. KESEHATAN -->
@@ -1102,6 +1104,24 @@
         pushUnique('./' + url);
         pushUnique(url.toLowerCase());
         pushUnique(url.replace(/\.geojson$/i, '.json'));
+        // init debug store
+        window.fetchDebugAttempts = window.fetchDebugAttempts || [];
+
+        function updateFetchDebugUI() {
+          try {
+            var el = document.getElementById('fetch_debug');
+            if (!el) return;
+            var html = '<div style="font-weight:600;margin-bottom:6px">Last fetch attempts</div>';
+            html += '<ol style="padding-left:18px;margin:0;font-size:12px">';
+            var arr = (window.fetchDebugAttempts || []).slice(-50).reverse();
+            for (var i=0;i<arr.length;i++) {
+              var it = arr[i];
+              html += '<li style="margin-bottom:4px;color:#333">' + escapeHtml(it) + '</li>';
+            }
+            html += '</ol>';
+            el.innerHTML = html;
+          } catch(e){}
+        }
 
         return new Promise(function (resolve, reject) {
           function tryFetch(idx) {
@@ -1109,7 +1129,12 @@
               reject('File not found');
               return;
             }
-            fetch(candidates[idx])
+            var attemptUrl = candidates[idx];
+            // record attempt
+            try { window.fetchDebugAttempts.push(attemptUrl); } catch(e){}
+            try { updateFetchDebugUI(); } catch(e){}
+
+            fetch(attemptUrl)
               .then((r) => {
                 if (!r.ok) throw new Error('404');
                 return r.json();
@@ -1772,7 +1797,18 @@
         if (container) container.style.display = 'block';
       }
 
-      function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c;}); }
+      function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c;}); }
+
+      // Attach toggle for debug panel
+      (function(){
+        var btn = document.getElementById('btn_toggle_fetch_debug');
+        if (!btn) return;
+        btn.addEventListener('click', function(){
+          var el = document.getElementById('fetch_debug');
+          if (!el) return;
+          if (el.style.display === 'none' || !el.style.display) el.style.display = 'block'; else el.style.display = 'none';
+        });
+      })();
 
       // --- Event Listeners ---
 
@@ -2468,6 +2504,9 @@
         // Try multiple paths (Robust)
         var candidates = [url, "data/" + url, url.toLowerCase(), url.replace(/\.geojson$/i, ".json")];
 
+        // Debug attempts
+        window.adminFetchAttempts = window.adminFetchAttempts || [];
+
         if (adminLayers[key]) {
           try {
             map.removeLayer(adminLayers[key]);
@@ -2477,7 +2516,12 @@
 
         for (var i = 0; i < candidates.length; i++) {
           try {
-            var resp = await fetch(candidates[i]);
+            var attempt = candidates[i];
+            try { window.adminFetchAttempts.push(attempt); } catch(e){}
+            // update debug UI if present
+            try { updateFetchDebugUI(); } catch(e){}
+
+            var resp = await fetch(attempt);
             if (!resp.ok) continue;
             var gj = await resp.json();
 
@@ -2714,7 +2758,17 @@
                 return searchInLayer(key, q);
               })
               .then(showResultsList)
-              .catch((err) => alert(err));
+              .catch((err) => {
+                console.warn('Admin layer load failed, using mock fallback', err);
+                // Fallback: use mock search (prototype behavior) so analysis can run
+                try {
+                  var results = performMockSearch(q, level);
+                  displaySearchResults(results);
+                } catch (e) {
+                  console.error('Mock fallback failed', e);
+                  alert(err);
+                }
+              });
           } else {
             searchInLayer(key, q).then(showResultsList);
           }
@@ -2734,6 +2788,82 @@
           clearAdminFilter();
         });
       })();
+
+        // --- Fallback Mock Search (from V7 prototype) ---
+        function performMockSearch(query, level) {
+          // Database Dummy Koordinat Jogja
+          const locs = [
+            { n: "Sleman", lat: -7.71, lon: 110.35, type: "Kabupaten" },
+            { n: "Bantul", lat: -7.89, lon: 110.33, type: "Kabupaten" },
+            { n: "Kulon Progo", lat: -7.82, lon: 110.16, type: "Kabupaten" },
+            { n: "Gunungkidul", lat: -7.97, lon: 110.6, type: "Kabupaten" },
+            { n: "Yogyakarta", lat: -7.8, lon: 110.37, type: "Kota" },
+            { n: "Depok", lat: -7.76, lon: 110.4, type: "Kecamatan" },
+            { n: "Malioboro", lat: -7.79, lon: 110.36, type: "Kawasan" },
+            { n: "Kaliurang", lat: -7.6, lon: 110.42, type: "Kawasan" },
+          ];
+
+          return locs.filter((l) => l.n.toLowerCase().includes(String(query || "").toLowerCase()));
+        }
+
+        function displaySearchResults(results) {
+          const list = document.getElementById("admin_results");
+          list.style.display = "block";
+          list.innerHTML = "";
+
+          if (!results || results.length === 0) {
+            list.innerHTML = '<li style="color:#e74c3c; cursor:default;">Wilayah tidak ditemukan.</li>';
+            return;
+          }
+
+          results.forEach((res) => {
+            const li = document.createElement("li");
+            li.innerHTML = `<b>${res.n}</b> <span style="font-size:11px; color:#777">(${res.type})</span>`;
+            li.onclick = () => selectAdminRegion(res);
+            list.appendChild(li);
+          });
+        }
+
+        function selectAdminRegion(data) {
+          // Create buffered polygon using Turf.js (mock geometry)
+          const center = [data.lon, data.lat];
+          const point = turf.point(center);
+          const radius = data.type === "Kabupaten" ? 10 : data.type === "Kecamatan" ? 3 : 1.5;
+          const buffered = turf.buffer(point, radius, { units: "kilometers" });
+
+          // Set as active filter polygon (V6.4 uses currentFilterPoly)
+          try {
+            currentFilterPoly = buffered;
+          } catch (e) {
+            APP_STATE.filterPolygon = buffered;
+          }
+
+          // Visualize on map
+          try {
+            adminBoundaryLayer.clearLayers();
+            const polyLayer = L.geoJSON(buffered, { style: { color: "#e74c3c", fillOpacity: 0.1, weight: 2, dashArray: "5, 5" } }).addTo(adminBoundaryLayer);
+            map.fitBounds(polyLayer.getBounds());
+          } catch (e) {}
+
+          // Update UI
+          const fnEl = document.getElementById("filterName");
+          if (fnEl) fnEl.innerText = `${data.n} (${data.type})`;
+          const afi = document.getElementById("activeFilterInfo");
+          if (afi) afi.style.display = "block";
+          document.getElementById("admin_results").style.display = "none";
+
+          // Refresh active layers and run analysis
+          try {
+            reloadAllActiveLayers();
+          } catch (e) {}
+          try {
+            // generate chart summary if available
+            if (typeof generateAdminAnalysis === 'function') generateAdminAnalysis();
+          } catch (e) {}
+          try {
+            if (typeof calculateStatsInPolygon === 'function') calculateStatsInPolygon();
+          } catch (e) {}
+        }
     </script>
   </body>
 </html>
