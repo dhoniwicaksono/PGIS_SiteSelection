@@ -1200,7 +1200,7 @@
 
       // --- CUSTOM MARKER CREATION (Preserved from Custom Symbols) ---
       function createCustomMarker(latlng, type, color, properties) {
-        var size = 14;
+        var size = 16;
         var strokeColor = "#ffffff"; // outline as requested
         var strokeWidth = 2;
 
@@ -1208,9 +1208,9 @@
         try {
           var key = (properties && (properties.kategori || properties.keterangan || "")).toString().toLowerCase();
           if (key.indexOf("gubernur") !== -1 || key.indexOf("prov") !== -1) size = 24;
-          else if (key.indexOf("bupati") !== -1 || key.indexOf("walikota") !== -1 || key.indexOf("kab") !== -1) size = 20;
-          else if (key.indexOf("camat") !== -1 || key.indexOf("kemantren") !== -1 || key.indexOf("kecamatan") !== -1) size = 16;
-          else if (key.indexOf("desa") !== -1 || key.indexOf("kelurahan") !== -1) size = 12;
+          else if (key.indexOf("bupati") !== -1 || key.indexOf("walikota") !== -1 || key.indexOf("kab") !== -1) size = 22;
+          else if (key.indexOf("camat") !== -1 || key.indexOf("kemantren") !== -1 || key.indexOf("kecamatan") !== -1) size = 20;
+          else if (key.indexOf("desa") !== -1 || key.indexOf("kelurahan") !== -1) size = 18;
 
           // Sekolah specific sizes
           if ((properties && properties.keterangan) || (properties && properties.kategori)) {
@@ -1221,10 +1221,10 @@
           }
         } catch (e) {}
 
-        // Emphasize important object types with larger markers
+        // Emphasize important object types with requested minimum sizes
         try {
-          if (type === "hospital") size = Math.max(size, 28);
-          if (type === "graduation") size = Math.max(size, 30);
+          if (type === "hospital") size = Math.max(size, 22);
+          if (type === "graduation") size = Math.max(size, 22);
         } catch (e) {}
 
         if (type === "circle") {
