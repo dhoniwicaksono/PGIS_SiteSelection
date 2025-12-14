@@ -1617,6 +1617,7 @@
       }
 
       function generateAdminAnalysis() {
+        console.debug('generateAdminAnalysis: currentFilterPoly present?', !!currentFilterPoly);
         var container = document.getElementById('admin_analysis');
         var chart = document.getElementById('admin_analysis_chart');
         if (!container || !chart) return;
@@ -1681,10 +1682,19 @@
         var counts = data.map(d=>d.count);
         var colors = data.map(d=>d.color || '#777');
 
+
         // Destroy previous chart if exists
         if (window.adminChart) {
           try { window.adminChart.destroy(); } catch(e){}
           window.adminChart = null;
+        }
+
+        // Build plugins list only if datalabels plugin is available
+        var pluginsList = [];
+        var optionsPlugins = { legend: { display: false } };
+        if (typeof ChartDataLabels !== 'undefined') {
+          pluginsList.push(ChartDataLabels);
+          optionsPlugins.datalabels = { anchor: 'end', align: 'right', color: '#111', font: { weight: '600' }, formatter: function(v){return v;} };
         }
 
         window.adminChart = new Chart(ctx, {
@@ -1697,16 +1707,13 @@
             indexAxis: 'y',
             responsive: false,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              datalabels: { anchor: 'end', align: 'right', color: '#111', font: { weight: '600' }, formatter: function(v){return v;} }
-            },
+            plugins: optionsPlugins,
             scales: {
               x: { beginAtZero: true, ticks: { precision:0 } },
               y: { ticks: { autoSkip: false } }
             }
           },
-          plugins: [ChartDataLabels]
+          plugins: pluginsList
         });
 
         // show container
@@ -1945,7 +1952,8 @@
       }
 
       // Export handlers for admin analysis
-      document.getElementById('btn_export_png').addEventListener('click', function(){
+      var _btn_png = document.getElementById('btn_export_png');
+      if (_btn_png) _btn_png.addEventListener('click', function(){
         try {
           if (!window.adminChart) { alert('Tidak ada chart untuk diekspor'); return; }
           var link = document.createElement('a');
@@ -1957,7 +1965,8 @@
         } catch(e){ alert('Export PNG gagal: '+e.message); }
       });
 
-      document.getElementById('btn_export_csv').addEventListener('click', function(){
+      var _btn_csv = document.getElementById('btn_export_csv');
+      if (_btn_csv) _btn_csv.addEventListener('click', function(){
         try {
           if (!window.adminChart) { alert('Tidak ada data untuk diekspor'); return; }
           var labels = window.adminChart.data.labels || [];
