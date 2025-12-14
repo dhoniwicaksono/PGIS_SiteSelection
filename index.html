@@ -1090,16 +1090,28 @@
 
       // --- GeoJSON Helper ---
       function fetchGeoJSON(url) {
-        var paths = [url, "data/" + url];
+        // Build candidate paths with common folders used across versions
+        var candidates = [];
+        function pushUnique(u){ if (!u) return; if (candidates.indexOf(u) === -1) candidates.push(u); }
+        pushUnique(url);
+        if (!/^data\//i.test(url)) pushUnique('data/' + url);
+        pushUnique('../V5.0/data/' + url);
+        pushUnique('../V4.0/data/' + url);
+        pushUnique('../V5.0/' + url);
+        pushUnique('../V4.0/' + url);
+        pushUnique('./' + url);
+        pushUnique(url.toLowerCase());
+        pushUnique(url.replace(/\.geojson$/i, '.json'));
+
         return new Promise(function (resolve, reject) {
           function tryFetch(idx) {
-            if (idx >= paths.length) {
-              reject("File not found");
+            if (idx >= candidates.length) {
+              reject('File not found');
               return;
             }
-            fetch(paths[idx])
+            fetch(candidates[idx])
               .then((r) => {
-                if (!r.ok) throw new Error("404");
+                if (!r.ok) throw new Error('404');
                 return r.json();
               })
               .then((data) => resolve(data))
